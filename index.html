@@ -32,6 +32,8 @@
   --lu:#5CC091; --quan:#E0A84A; --ke:#7FA8E6; --ji:#F07A70; --good:#7FA8E6; --bad:#F07A70;
 }
 *,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+.ymd input{min-width:0;width:100%}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -127,6 +129,9 @@ label.f > *{color:var(--ink);font-size:15px}
 .ymd{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px}
 .inline{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
 .err{color:var(--bad);font-size:13px;min-height:1em}
+.clockbox{display:flex;flex-direction:column;gap:8px;border-left:3px solid var(--zi-soft);padding-left:10px}
+.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.tst{font-size:14px;color:var(--zi);font-weight:500;min-height:1.2em}
 .io{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 
 .empty-state{padding:40px 0;text-align:left;max-width:34em}
@@ -202,7 +207,22 @@ label.f > *{color:var(--ink);font-size:15px}
           </div>
         </label>
         <label class="inline" id="leapWrap" hidden><input type="checkbox" id="fLeap"> 閏月</label>
-        <label class="f">出生時辰<select id="fTime"></select></label>
+        <div class="inline">
+          <label><input type="radio" name="tm" value="clock" checked> 知道幾點幾分</label>
+          <label><input type="radio" name="tm" value="hour"> 只知道時辰</label>
+        </div>
+        <div id="clockWrap" class="clockbox">
+          <label class="f">出生時間（出生證明上的鐘錶時間）<input type="time" id="fClock" value="12:00"></label>
+          <label class="f">出生地<select id="fPlace"></select></label>
+          <div class="ymd" id="lonWrap" hidden style="grid-template-columns:1fr 1fr">
+            <label class="f">經度（東經）<input type="number" id="fLon" step="0.01" placeholder="121.56"></label>
+            <label class="f">時區（UTC+）<input type="number" id="fTz" step="0.5" value="8"></label>
+          </div>
+          <label class="inline"><input type="checkbox" id="fDst"> 當時正在實施夏令時間（日光節約時間）</label>
+          <div class="hint">台灣 1945–1961、1974–1975、1979 年夏天，中國大陸 1986–1991 年夏天曾實施。不確定可以對照文墨天機的「真太陽時」。</div>
+          <div class="tst" id="tstPreview"></div>
+        </div>
+        <label class="f" id="hourWrap" hidden>出生時辰<select id="fTime"></select></label>
         <label class="f">備註（選填）<input type="text" id="fNote" maxlength="60" placeholder="例如：個性、職業、已知事件"></label>
         <div class="err" id="fErr"></div>
         <div class="inline">
@@ -246,23 +266,66 @@ let notes = load(KEY_N, {});
 let ui = Object.assign({ view:'compare', mode:'star', star:'紫微', palace:'命宮', person:null }, load(KEY_UI, {}));
 const saveUI = () => save(KEY_UI, ui);
 
+/* ---------- 出生地與真太陽時 ---------- */
+const PLACES = [
+  ['台北',121.56,8],['新北',121.46,8],['基隆',121.74,8],['桃園',121.30,8],['新竹',120.97,8],['苗栗',120.82,8],
+  ['台中',120.68,8],['彰化',120.54,8],['南投',120.69,8],['雲林',120.53,8],['嘉義',120.45,8],['台南',120.21,8],
+  ['高雄',120.30,8],['屏東',120.49,8],['宜蘭',121.75,8],['花蓮',121.60,8],['台東',121.14,8],['澎湖',119.58,8],
+  ['金門',118.32,8],['馬祖',119.95,8],['香港',114.17,8],['澳門',113.54,8],['北京',116.40,8],['上海',121.47,8],
+  ['廣州',113.26,8],['深圳',114.06,8],['吉隆坡',101.69,8],['新加坡',103.82,8],['東京',139.69,9],['首爾',126.98,9],
+];
+function placeOf(p) {
+  if (p.place === '其他') return { lon: +p.lon, tz: +p.tz };
+  const f = PLACES.find(x => x[0] === p.place) || PLACES[0];
+  return { lon: f[1], tz: f[2] };
+}
+const pad = n => String(n).padStart(2, '0');
+// 均時差（分鐘），NOAA 近似公式
+function eqTime(y, m, d) {
+  const doy = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / 864e5);
+  const g = 2 * Math.PI / 365 * doy;
+  return 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+}
+const hourToIndex = h => h === 0 ? 0 : h === 23 ? 12 : Math.floor((h + 1) / 2);
+// 國曆日期 + 鐘錶時間 → 真太陽時
+function trueSolar(y, m, d, clock, p) {
+  const [hh, mm] = clock.split(':').map(Number);
+  const { lon, tz } = placeOf(p);
+  const offset = (p.dst ? -60 : 0) + (lon - tz * 15) * 4 + eqTime(y, m, d);
+  const t = new Date(Date.UTC(y, m - 1, d, hh, mm) + Math.round(offset) * 6e4);
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate(), h: t.getUTCHours(), mi: t.getUTCMinutes(), offset };
+}
+// 算出實際拿去排盤的國曆日期與時辰
+function birthOf(p) {
+  if (p.timeMode !== 'clock') return { mode:'hour' };
+  let y = p.y, m = p.m, d = p.d;
+  if (p.calendar === 'lunar') {
+    const s = astro.byLunar(`${y}-${m}-${d}`, 0, p.gender, !!p.leap, true, 'zh-TW').solarDate.split('-').map(Number);
+    [y, m, d] = s;
+  }
+  const t = trueSolar(y, m, d, p.clock, p);
+  return { mode:'clock', solar:`${t.y}-${t.m}-${t.d}`, time: hourToIndex(t.h), label:`${t.y}-${pad(t.m)}-${pad(t.d)} ${pad(t.h)}:${pad(t.mi)}` };
+}
+
 /* ---------- 排盤 ---------- */
 const cache = new Map();
 function chartOf(p) {
-  const key = [p.calendar, p.y, p.m, p.d, p.leap, p.time, p.gender].join('|');
+  const key = [p.calendar, p.y, p.m, p.d, p.leap, p.time, p.gender, p.timeMode, p.clock, p.place, p.lon, p.tz, p.dst].join('|');
   const c = cache.get(p.id);
   if (c && c.key === key) return c.a;
   const ds = `${p.y}-${p.m}-${p.d}`;
   let a = null;
   try {
-    a = p.calendar === 'lunar'
+    const b = birthOf(p);
+    if (b.mode === 'clock') { a = astro.bySolar(b.solar, b.time, p.gender, true, 'zh-TW'); a._tst = b.label; }
+    else a = p.calendar === 'lunar'
       ? astro.byLunar(ds, p.time, p.gender, !!p.leap, true, 'zh-TW')
       : astro.bySolar(ds, p.time, p.gender, true, 'zh-TW');
   } catch (e) { console.error(e); }
   cache.set(p.id, { key, a });
   return a;
 }
-const palName = n => n.endsWith('宮') ? n : n + '宮';
+const palName = n => n === '僕役' ? '交友宮' : (n.endsWith('宮') ? n : n + '宮');
 const shortPal = n => n.replace(/宮$/, '') || n;
 const allStars = pal => [
   ...pal.majorStars.map(s => ({...s, kind:'major'})),
@@ -397,6 +460,7 @@ function renderChart() {
     <div class="center"><h3>${esc(p.name)}</h3><dl>
       <dt>性別</dt><dd>${esc(a.gender)}</dd>
       <dt>國曆</dt><dd>${esc(a.solarDate)}</dd>
+      ${p.timeMode === 'clock' ? `<dt>鐘錶時間</dt><dd>${p.y}/${p.m}/${p.d} ${esc(p.clock)}（${esc(p.place)}${p.dst ? '，夏令時間' : ''}）</dd><dt>真太陽時</dt><dd>${esc(a._tst || '')}</dd>` : ''}
       <dt>農曆</dt><dd>${esc(a.lunarDate)}　${esc(a.time)}</dd>
       <dt>四柱</dt><dd>${esc(a.chineseDate)}</dd>
       <dt>五行局</dt><dd>${esc(a.fiveElementsClass)}</dd>
@@ -412,16 +476,50 @@ function renderPeople() {
     const ming = a && a.palaces.find(x => x.name === '命宮');
     const mj = ming ? (ming.majorStars.map(s => s.name).join('') || '命無主星') : '排盤失敗';
     return `<div class="pitem"><div class="meta"><b>${esc(p.name)}</b>
-      <div>${p.gender}・${p.calendar === 'lunar' ? '農曆' : '國曆'} ${p.y}/${p.m}/${p.d}${p.leap ? '（閏）' : ''}・${TIMES[p.time].split(' ')[0]}・${esc(mj)}</div></div>
+      <div>${p.gender}・${p.calendar === 'lunar' ? '農曆' : '國曆'} ${p.y}/${p.m}/${p.d}${p.leap ? '（閏）' : ''}・${p.timeMode === 'clock' ? esc(p.clock) + ' ' + esc(p.place) : TIMES[p.time].split(' ')[0]}・${esc(mj)}</div></div>
       <button class="btn" data-edit="${esc(p.id)}">編輯</button>
       <button class="btn danger" data-del="${esc(p.id)}">刪除</button></div>`;
   }).join('') : '<p class="with" style="padding:12px 0">還沒有朋友。用右邊的表單新增，或先加入範例試試看。</p>';
 }
 $('#fTime').innerHTML = TIMES.map((t, i) => `<option value="${i}">${t}</option>`).join('');
+$('#fPlace').innerHTML = PLACES.map(x => `<option>${x[0]}</option>`).join('') + '<option>其他</option>';
+const tmVal = () => document.querySelector('input[name=tm]:checked').value;
+function syncTimeUI() {
+  const clock = tmVal() === 'clock';
+  $('#clockWrap').hidden = !clock; $('#hourWrap').hidden = clock;
+  $('#lonWrap').hidden = $('#fPlace').value !== '其他';
+  previewTST();
+}
+function formPerson() {
+  return {
+    name: $('#fName').value.trim(),
+    gender: document.querySelector('input[name=g]:checked').value,
+    calendar: document.querySelector('input[name=cal]:checked').value,
+    y: +$('#fY').value, m: +$('#fM').value, d: +$('#fD').value,
+    leap: $('#fLeap').checked && document.querySelector('input[name=cal]:checked').value === 'lunar',
+    timeMode: tmVal(), clock: $('#fClock').value || '12:00',
+    place: $('#fPlace').value, lon: $('#fLon').value, tz: $('#fTz').value, dst: $('#fDst').checked,
+    time: +$('#fTime').value, note: $('#fNote').value.trim(),
+  };
+}
+function previewTST() {
+  const el = $('#tstPreview'); el.textContent = '';
+  const p = formPerson();
+  if (p.timeMode !== 'clock' || !p.y || !p.m || !p.d) return;
+  if (p.place === '其他' && (!p.lon || !p.tz)) { el.textContent = '請填經度與時區'; return; }
+  try {
+    const b = birthOf(p);
+    el.textContent = `真太陽時 ${b.label}　→　${TIMES[b.time].split(' ')[0]}`;
+  } catch { }
+}
+document.querySelectorAll('input[name=tm]').forEach(r => r.addEventListener('change', syncTimeUI));
+['#fPlace','#fClock','#fY','#fM','#fD','#fLon','#fTz','#fDst','#fLeap'].forEach(id => $(id).addEventListener('input', syncTimeUI));
+document.querySelectorAll('input[name=cal]').forEach(r => r.addEventListener('change', previewTST));
 
 function resetForm() {
   $('#pform').reset(); $('#fId').value = ''; $('#fErr').textContent = '';
   $('#formTitle').textContent = '新增朋友'; $('#cancelBtn').hidden = true; $('#leapWrap').hidden = true;
+  $('#fClock').value = '12:00'; syncTimeUI();
 }
 function fillForm(p) {
   $('#fId').value = p.id; $('#fName').value = p.name;
@@ -430,6 +528,11 @@ function fillForm(p) {
   $('#fY').value = p.y; $('#fM').value = p.m; $('#fD').value = p.d; $('#fLeap').checked = !!p.leap;
   $('#leapWrap').hidden = p.calendar !== 'lunar';
   $('#fTime').value = p.time; $('#fNote').value = p.note || '';
+  const mode = p.timeMode === 'clock' ? 'clock' : 'hour';
+  document.querySelector(`input[name=tm][value="${mode}"]`).checked = true;
+  $('#fClock').value = p.clock || '12:00'; $('#fPlace').value = p.place || '台北';
+  $('#fLon').value = p.lon || ''; $('#fTz').value = p.tz || 8; $('#fDst').checked = !!p.dst;
+  syncTimeUI();
   $('#formTitle').textContent = '編輯：' + p.name; $('#cancelBtn').hidden = false;
   $('#fName').focus();
 }
@@ -439,15 +542,8 @@ document.querySelectorAll('input[name=cal]').forEach(r => r.addEventListener('ch
 $('#cancelBtn').addEventListener('click', resetForm);
 $('#pform').addEventListener('submit', e => {
   e.preventDefault();
-  const p = {
-    id: $('#fId').value || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    name: $('#fName').value.trim(),
-    gender: document.querySelector('input[name=g]:checked').value,
-    calendar: document.querySelector('input[name=cal]:checked').value,
-    y: +$('#fY').value, m: +$('#fM').value, d: +$('#fD').value,
-    leap: $('#fLeap').checked && document.querySelector('input[name=cal]:checked').value === 'lunar',
-    time: +$('#fTime').value, note: $('#fNote').value.trim(),
-  };
+  const p = Object.assign({ id: $('#fId').value || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, formPerson());
+  if (p.timeMode === 'clock' && p.place === '其他' && (!p.lon || !p.tz)) { $('#fErr').textContent = '選「其他」時請填出生地的經度與時區。'; return; }
   if (p.calendar === 'solar') {
     const dt = new Date(p.y, p.m - 1, p.d);
     if (dt.getMonth() !== p.m - 1) { $('#fErr').textContent = `${p.y} 年 ${p.m} 月沒有 ${p.d} 日，請檢查日期。`; return; }
@@ -532,6 +628,7 @@ document.querySelector('main').addEventListener('input', e => {
   clearTimeout(nt); nt = setTimeout(() => save(KEY_N, notes), 400);
 });
 
+syncTimeUI();
 go(ui.view);
 })();
 </script>
