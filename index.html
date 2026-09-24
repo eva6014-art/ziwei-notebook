@@ -97,7 +97,7 @@ td.name{font-weight:700;white-space:nowrap}
 
 /* 命盤 */
 .chart-wrap{overflow-x:auto}
-.chart{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));grid-template-rows:repeat(4,minmax(170px,auto));border:2px solid var(--ink);background:var(--sheet);min-width:620px}
+.chart{display:grid;grid-template-columns:repeat(4,minmax(165px,1fr));grid-template-rows:repeat(4,minmax(200px,auto));border:2px solid var(--ink);background:var(--sheet);min-width:620px}
 .cell{border:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:4px;position:relative}
 .cell.hl{background:var(--zi-soft)}
 .cell .majors{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:18px}
@@ -107,6 +107,20 @@ td.name{font-weight:700;white-space:nowrap}
 .cell .pal{font-family:var(--serif);font-weight:600;font-size:16px}
 .cell .pal.ming{color:var(--zi)}
 .cell .gz{font-size:12px;color:var(--muted);text-align:right}
+.fly{display:inline-block;font-size:10px;line-height:1;padding:2px 3px;border-radius:3px;margin-left:2px;vertical-align:2px;border:1px solid;font-family:var(--sans);font-weight:500;background:transparent}
+.fly.祿{color:var(--lu)}.fly.權{color:var(--quan)}.fly.科{color:var(--ke)}.fly.忌{color:var(--ji)}
+.fly.in{border-style:dashed}
+.sw{white-space:nowrap}
+.cell .majors,.cell .minors{align-items:baseline}
+.cell .ages{font-size:11px;color:var(--muted);line-height:1.5;margin-top:auto;padding-top:4px}
+.cell .foot3{display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:6px}
+.cell .gods{font-size:11px;line-height:1.45;color:var(--muted)}
+.cell .gods .bs{color:var(--ke)}
+.cell .dec{text-align:center;font-size:13px;font-weight:500}
+.cell .rt{text-align:right;line-height:1.3}
+.cell .rt .cs{font-size:11px;color:var(--muted);display:block}
+.cell .rt .gz2{font-size:12px;color:var(--muted);display:block}
+.chart.simple .ages,.chart.simple .gods,.chart.simple .rt .cs{display:none}
 .tag{font-size:11px;border:1px solid var(--zi);color:var(--zi);border-radius:3px;padding:0 4px;margin-left:4px;vertical-align:2px}
 .center{grid-column:2/4;grid-row:2/4;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:4px}
 .center h3{font-family:var(--serif);font-weight:900;font-size:30px;margin:0 0 6px;letter-spacing:.06em}
@@ -172,6 +186,10 @@ label.f > *{color:var(--ink);font-size:15px}
   <section class="view" id="v-chart">
     <div class="controls">
       <select id="personSel" aria-label="選擇朋友"></select>
+      <div class="seg" role="group" aria-label="顯示內容" id="detailSeg">
+        <button data-detail="full">完整</button>
+        <button data-detail="simple">精簡</button>
+      </div>
       <span class="legend">點盤上的星曜，會跳到「對照」看所有朋友的這顆星</span>
     </div>
     <div id="chartOut"></div>
@@ -307,6 +325,26 @@ function birthOf(p) {
   return { mode:'clock', solar:`${t.y}-${t.m}-${t.d}`, time: hourToIndex(t.h), label:`${t.y}-${pad(t.m)}-${pad(t.d)} ${pad(t.h)}:${pad(t.mi)}` };
 }
 
+/* ---------- 宮干四化（飛化） ---------- */
+const SIHUA = {甲:['廉貞','破軍','武曲','太陽'],乙:['天機','天梁','紫微','太陰'],丙:['天同','天機','文昌','廉貞'],丁:['太陰','天同','天機','巨門'],戊:['貪狼','太陰','右弼','天機'],己:['武曲','貪狼','天梁','文曲'],庚:['太陽','武曲','太陰','天同'],辛:['巨門','太陽','文曲','文昌'],壬:['天梁','紫微','左輔','武曲'],癸:['破軍','巨門','太陰','貪狼']};
+const HN = ['祿','權','科','忌'];
+const BR = '子丑寅卯辰巳午未申酉戌亥';
+// 回傳 { 地支: { 星名: [{dir:'out'|'in', hua}] } }
+function flyMarks(a) {
+  const byBr = Object.fromEntries(a.palaces.map(p => [p.earthlyBranch, p]));
+  const marks = {};
+  const add = (br, star, m) => (((marks[br] ||= {})[star]) ||= []).push(m);
+  a.palaces.forEach(pal => {
+    const opp = byBr[BR[(BR.indexOf(pal.earthlyBranch) + 6) % 12]];
+    (SIHUA[pal.heavenlyStem] || []).forEach((star, i) => {
+      if (allStars(pal).some(s => s.name === star)) add(pal.earthlyBranch, star, { dir:'out', hua:HN[i] });
+      if (opp && allStars(opp).some(s => s.name === star)) add(opp.earthlyBranch, star, { dir:'in', hua:HN[i] });
+    });
+  });
+  return marks;
+}
+const godName = n => n === '官府' ? '官符' : n;
+
 /* ---------- 排盤 ---------- */
 const cache = new Map();
 function chartOf(p) {
@@ -439,34 +477,48 @@ function renderChart() {
   const out = $('#chartOut');
   if (!people.length) { sel.hidden = true; out.innerHTML = emptyState(); return; }
   sel.hidden = false;
+  document.querySelectorAll('#detailSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.detail === (ui.detail || 'full')));
   if (!people.some(p => p.id === ui.person)) ui.person = people[0].id;
   sel.innerHTML = people.map(p => `<option value="${esc(p.id)}"${p.id === ui.person ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
   const p = people.find(x => x.id === ui.person);
   const a = chartOf(p);
   if (!a) { out.innerHTML = '<p class="err">這組生日排不出盤，請到「朋友」檢查日期是否正確。</p>'; return; }
+  const marks = flyMarks(a);
+  const yb = BR.indexOf(a.rawDates.chineseDate.yearly[1]);
+  const star2 = (s, br) => '<span class="sw">' + starHTML(s) + ((marks[br] || {})[s.name] || []).map(m =>
+    `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}" title="${m.dir === 'in' ? '對宮宮干化入（向心）' : '本宮宮干自化（離心）'}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('') + '</span>';
   const cells = a.palaces.map(pal => {
     const [r, c] = POS[pal.earthlyBranch];
     const st = allStars(pal);
+    const br = pal.earthlyBranch;
+    const s0 = (BR.indexOf(br) - yb + 12) % 12 + 1;
+    const flow = [0,1,2,3,4].map(k => s0 + 12 * k).join(', ');
     const hl = findStar({ palaces:[pal] }, ui.star) ? ' hl' : '';
     const isMing = pal.name === '命宮';
     return `<div class="cell${hl}" style="grid-row:${r};grid-column:${c}">
-      <div class="majors">${st.filter(s => s.kind === 'major').map(s => starHTML(s)).join('')}</div>
-      <div class="minors">${st.filter(s => s.kind === 'soft' || s.kind === 'tough').map(s => starHTML(s)).join('')}</div>
+      <div class="majors">${st.filter(s => s.kind === 'major').map(s => star2(s, br)).join('')}</div>
+      <div class="minors">${st.filter(s => s.kind === 'soft' || s.kind === 'tough').map(s => star2(s, br)).join('')}</div>
       <div class="adjs">${st.filter(s => s.kind === 'adj').map(s => starHTML(s)).join('')}</div>
-      <div class="foot"><div class="pal${isMing ? ' ming' : ''}">${palName(pal.name)}${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}</div>
-      <div class="gz">${pal.decadal.range.join('–')}<br>${pal.heavenlyStem}${pal.earthlyBranch}</div></div></div>`;
+      <div class="ages">流年 ${flow}<br>小限 ${pal.ages.slice(0, 5).join(', ')}</div>
+      <div class="foot3">
+        <div class="gods"><span class="bs">${esc(godName(pal.boshi12))}</span><br>${esc(pal.jiangqian12)}<br>${esc(pal.suiqian12)}</div>
+        <div class="dec">${pal.decadal.range.join('–')}</div>
+        <div class="rt"><span class="cs">${esc(pal.changsheng12)}</span><span class="pal${isMing ? ' ming' : ''}">${palName(pal.name)}${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}</span><span class="gz2">${pal.heavenlyStem}${pal.earthlyBranch}</span></div>
+      </div></div>`;
   }).join('');
-  out.innerHTML = `<div class="chart-wrap"><div class="chart">${cells}
+  const yh = SIHUA[a.rawDates.chineseDate.yearly[0]] || [];
+  out.innerHTML = `<div class="chart-wrap"><div class="chart${ui.detail === 'simple' ? ' simple' : ''}">${cells}
     <div class="center"><h3>${esc(p.name)}</h3><dl>
       <dt>性別</dt><dd>${esc(a.gender)}</dd>
       <dt>國曆</dt><dd>${esc(a.solarDate)}</dd>
       ${p.timeMode === 'clock' ? `<dt>鐘錶時間</dt><dd>${p.y}/${p.m}/${p.d} ${esc(p.clock)}（${esc(p.place)}${p.dst ? '，夏令時間' : ''}）</dd><dt>真太陽時</dt><dd>${esc(a._tst || '')}</dd>` : ''}
       <dt>農曆</dt><dd>${esc(a.lunarDate)}　${esc(a.time)}</dd>
       <dt>四柱</dt><dd>${esc(a.chineseDate)}</dd>
+      <dt>生年四化</dt><dd>${yh.map((n, i) => `${n}<span class="hua ${HN[i]}">${HN[i]}</span>`).join('　')}</dd>
       <dt>五行局</dt><dd>${esc(a.fiveElementsClass)}</dd>
       <dt>命主／身主</dt><dd>${esc(a.soul)}／${esc(a.body)}</dd>
       ${p.note ? `<dt>備註</dt><dd>${esc(p.note)}</dd>` : ''}</dl></div></div></div>
-    <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。</p>`;
+    <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。實心標籤是生年四化；<span class="fly 祿">→祿</span> 是本宮宮干自化（離心），<span class="fly 祿 in">←祿</span> 是對宮宮干化入（向心）。宮位左下三行依序為博士、將前、歲前十二神，右下小字為長生十二神。</p>`;
 }
 
 /* ---------- 朋友 ---------- */
@@ -611,6 +663,7 @@ document.querySelector('.seg').addEventListener('click', e => { const b = e.targ
 $('#starSel').addEventListener('change', e => { ui.star = e.target.value; saveUI(); renderCompare(); });
 $('#palSel').addEventListener('change', e => { ui.palace = e.target.value; saveUI(); renderCompare(); });
 $('#personSel').addEventListener('change', e => { ui.person = e.target.value; saveUI(); renderChart(); });
+$('#detailSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.detail = b.dataset.detail; saveUI(); renderChart(); });
 
 document.querySelector('main').addEventListener('click', e => {
   const s = e.target.closest('.s.clickable');
