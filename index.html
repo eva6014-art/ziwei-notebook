@@ -131,6 +131,55 @@ td.name{font-weight:700;white-space:nowrap}
 /* 朋友 */
 .people{display:grid;gap:24px;grid-template-columns:minmax(0,1fr) minmax(280px,360px);align-items:start}
 @media (max-width:760px){.people{grid-template-columns:1fr}}
+.cell{cursor:pointer}
+.cell.sel{outline:2px solid var(--zi);outline-offset:-2px;z-index:1}
+.pdetail{display:none;margin-top:14px;background:var(--sheet);border:1px solid var(--line);border-left:4px solid var(--zi);border-radius:8px;padding:12px 14px}
+.pd-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.pd-head b{font-family:var(--serif);font-size:20px}
+.pd-head span:last-child{color:var(--muted);font-size:13px}
+.pdetail dl{display:grid;grid-template-columns:3.5em 1fr;gap:4px 10px;margin:0;font-size:14px}
+.pdetail dt{color:var(--muted)}.pdetail dd{margin:0}
+.pdetail dd.big{font-size:17px}
+.pd-tip{font-size:12px;color:var(--muted);margin:8px 0 0}
+@media (max-width:700px){
+  main{padding:14px 8px 60px}
+  .bar{padding:10px 12px;gap:8px}
+  .brand{font-size:19px}.brand small{display:none}
+  nav button{padding:6px 11px}
+  .chart-wrap{overflow:visible}
+  .chart{min-width:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(118px,auto))}
+  .cell{padding:3px 3px 2px;gap:1px;overflow:hidden}
+  .cell .s{pointer-events:none}
+  .cell .majors{font-size:13px;gap:0 3px;line-height:1.25}
+  .cell .minors{font-size:11px;gap:0 3px;line-height:1.3}
+  .cell .adjs{font-size:9px;gap:0 2px;line-height:1.3}
+  .cell .s .b{font-size:9px}
+  .cell .hua{font-size:9px;padding:1px 2px;margin-left:1px}
+  .cell .fly{font-size:8px;padding:0 1px;margin-left:1px;vertical-align:1px}
+  .cell .ages{display:none}
+  .cell .foot3{grid-template-columns:1fr auto;gap:2px}
+  .cell .gods{display:none}
+  .cell .dec{white-space:nowrap;grid-column:1;grid-row:1;text-align:left;font-size:9px;font-weight:400;color:var(--muted);align-self:end}
+  .cell .rt .cs{font-size:9px}
+  .cell .rt .gz2{font-size:10px}
+  .cell .pal{font-size:12px}
+  .cell .tag{font-size:9px;padding:0 2px;margin-left:1px}
+  .center{padding:8px}
+  .center h3{font-size:18px;margin:0 0 2px}
+  .center dl{font-size:10px;gap:0 6px;line-height:1.45}
+  .center .hua{font-size:8px;padding:1px 2px}
+  .pdetail{display:block}
+  .legend{font-size:12px}
+  /* 以宮看星：表格改成卡片 */
+  table{min-width:0}
+  thead{display:none}
+  tr{display:block;border-bottom:1px solid var(--line);padding:8px 0}
+  td{display:block;position:relative;border:0;padding:3px 0 3px 3.6em}
+  td::before{content:attr(data-l);position:absolute;left:0;top:4px;color:var(--muted);font-size:13px}
+  td.name{font-size:16px;padding-left:0}
+  td.name::before{content:none}
+  .tbl-wrap{overflow:visible}
+}
 .plist{border-top:2px solid var(--ink)}
 .pitem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .pitem .meta{flex:1;min-width:0}
@@ -455,10 +504,10 @@ function renderByPalace() {
     if (!pal) return '';
     const st = allStars(pal);
     const pick = k => st.filter(s => s.kind === k).map(s => starHTML(s)).join('、') || '—';
-    return `<tr><td class="name"><span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span></td>
-      <td>${pal.heavenlyStem}${pal.earthlyBranch}${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}</td>
-      <td>${st.some(s => s.kind === 'major') ? pick('major') : '<span class="with">空宮</span>'}</td>
-      <td>${pick('soft')}</td><td>${pick('tough')}</td><td style="font-size:13px">${pick('adj')}</td></tr>`;
+    return `<tr><td class="name" data-l=""><span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span></td>
+      <td data-l="干支">${pal.heavenlyStem}${pal.earthlyBranch}${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}</td>
+      <td data-l="主星">${st.some(s => s.kind === 'major') ? pick('major') : '<span class="with">空宮</span>'}</td>
+      <td data-l="吉星">${pick('soft')}</td><td data-l="煞星">${pick('tough')}</td><td data-l="雜曜" style="font-size:13px">${pick('adj')}</td></tr>`;
   }).join('');
   return `<div class="focus"><h2>${palName(n)}</h2><p>每位朋友的${palName(n)}裡有哪些星。點星名可以切到「以星找宮」。</p></div>
     <div class="tbl-wrap"><table><thead><tr><th>朋友</th><th>干支</th><th>主星</th><th>吉星・祿馬</th><th>煞星</th><th>雜曜</th></tr></thead>
@@ -485,6 +534,7 @@ function renderChart() {
   if (!a) { out.innerHTML = '<p class="err">這組生日排不出盤，請到「朋友」檢查日期是否正確。</p>'; return; }
   const marks = flyMarks(a);
   const yb = BR.indexOf(a.rawDates.chineseDate.yearly[1]);
+  if (!a.palaces.some(x => x.earthlyBranch === ui.selBr)) ui.selBr = a.palaces.find(x => x.name === '命宮').earthlyBranch;
   const star2 = (s, br) => '<span class="sw">' + starHTML(s) + ((marks[br] || {})[s.name] || []).map(m =>
     `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}" title="${m.dir === 'in' ? '對宮宮干化入（向心）' : '本宮宮干自化（離心）'}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('') + '</span>';
   const cells = a.palaces.map(pal => {
@@ -495,7 +545,8 @@ function renderChart() {
     const flow = [0,1,2,3,4].map(k => s0 + 12 * k).join(', ');
     const hl = findStar({ palaces:[pal] }, ui.star) ? ' hl' : '';
     const isMing = pal.name === '命宮';
-    return `<div class="cell${hl}" style="grid-row:${r};grid-column:${c}">
+    const sel = br === ui.selBr ? ' sel' : '';
+    return `<div class="cell${hl}${sel}" data-br="${br}" style="grid-row:${r};grid-column:${c}">
       <div class="majors">${st.filter(s => s.kind === 'major').map(s => star2(s, br)).join('')}</div>
       <div class="minors">${st.filter(s => s.kind === 'soft' || s.kind === 'tough').map(s => star2(s, br)).join('')}</div>
       <div class="adjs">${st.filter(s => s.kind === 'adj').map(s => starHTML(s)).join('')}</div>
@@ -518,7 +569,29 @@ function renderChart() {
       <dt>五行局</dt><dd>${esc(a.fiveElementsClass)}</dd>
       <dt>命主／身主</dt><dd>${esc(a.soul)}／${esc(a.body)}</dd>
       ${p.note ? `<dt>備註</dt><dd>${esc(p.note)}</dd>` : ''}</dl></div></div></div>
+    ${palDetail(a, marks, yb)}
     <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。實心標籤是生年四化；<span class="fly 祿">→祿</span> 是本宮宮干自化（離心），<span class="fly 祿 in">←祿</span> 是對宮宮干化入（向心）。宮位左下三行依序為博士、將前、歲前十二神，右下小字為長生十二神。</p>`;
+}
+
+function palDetail(a, marks, yb) {
+  const pal = a.palaces.find(x => x.earthlyBranch === ui.selBr);
+  const br = pal.earthlyBranch, st = allStars(pal);
+  const s0 = (BR.indexOf(br) - yb + 12) % 12 + 1;
+  const withFly = s => starHTML(s) + ((marks[br] || {})[s.name] || []).map(m =>
+    `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('');
+  const list = k => st.filter(s => s.kind === k).map(withFly).join('、') || '—';
+  return `<div class="pdetail">
+    <div class="pd-head"><b>${palName(pal.name)}</b>${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}<span>${pal.heavenlyStem}${pal.earthlyBranch}・大限 ${pal.decadal.range.join('–')}</span></div>
+    <dl>
+      <dt>主星</dt><dd class="big">${st.some(s => s.kind === 'major') ? list('major') : '空宮'}</dd>
+      <dt>吉星</dt><dd>${list('soft')}</dd>
+      <dt>煞星</dt><dd>${list('tough')}</dd>
+      <dt>雜曜</dt><dd>${list('adj')}</dd>
+      <dt>流年</dt><dd>${[0,1,2,3,4,5,6].map(k => s0 + 12 * k).join(', ')}</dd>
+      <dt>小限</dt><dd>${pal.ages.join(', ')}</dd>
+      <dt>十二神</dt><dd>博士 ${esc(godName(pal.boshi12))}・將前 ${esc(pal.jiangqian12)}・歲前 ${esc(pal.suiqian12)}・長生 ${esc(pal.changsheng12)}</dd>
+    </dl>
+    <p class="pd-tip">點盤上任一格可切換宮位；點這裡的星名可以看所有朋友的這顆星。</p></div>`;
 }
 
 /* ---------- 朋友 ---------- */
@@ -666,6 +739,13 @@ $('#personSel').addEventListener('change', e => { ui.person = e.target.value; sa
 $('#detailSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.detail = b.dataset.detail; saveUI(); renderChart(); });
 
 document.querySelector('main').addEventListener('click', e => {
+  const cell = e.target.closest('.cell[data-br]');
+  const narrow = window.matchMedia('(max-width:700px)').matches;
+  if (cell && (narrow || !e.target.closest('.s.clickable'))) {
+    ui.selBr = cell.dataset.br; saveUI(); renderChart();
+    if (narrow) document.querySelector('.pdetail')?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
   const s = e.target.closest('.s.clickable');
   const w = e.target.closest('.who');
   const g = e.target.closest('[data-go]');
