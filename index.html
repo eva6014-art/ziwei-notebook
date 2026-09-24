@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>星曜對照簿｜紫微斗數學習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/iztro@2.6.1/dist/iztro.min.js"></script>
+<style>
+:root{
+  --paper:#EDEBF2; --sheet:#FAF9FC; --ink:#221C33; --muted:#6B6480; --line:#CFCADB;
+  --zi:#5B3E8C; --zi-soft:#E4DCF1;
+  --lu:#2E7D5B; --quan:#A0660F; --ke:#2F5E9E; --ji:#B3261E;
+  --good:#2F5E9E; --bad:#B3261E;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#16131F; --sheet:#1F1B2B; --ink:#ECE8F5; --muted:#A39CB8; --line:#3A3450;
+    --zi:#B79AE6; --zi-soft:#2F2744;
+    --lu:#5CC091; --quan:#E0A84A; --ke:#7FA8E6; --ji:#F07A70; --good:#7FA8E6; --bad:#F07A70;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#16131F; --sheet:#1F1B2B; --ink:#ECE8F5; --muted:#A39CB8; --line:#3A3450;
+  --zi:#B79AE6; --zi-soft:#2F2744;
+  --lu:#5CC091; --quan:#E0A84A; --ke:#7FA8E6; --ji:#F07A70; --good:#7FA8E6; --bad:#F07A70;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--zi);outline-offset:2px}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.bar{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-weight:900;font-size:22px;letter-spacing:.08em;display:flex;align-items:baseline;gap:8px}
+.brand small{font-family:var(--sans);font-weight:400;font-size:13px;color:var(--muted);letter-spacing:0}
+nav{display:flex;gap:4px;margin-left:auto}
+nav button{border:0;background:none;padding:6px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+nav button[aria-current="true"]{background:var(--zi);color:var(--sheet)}
+
+main{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.view{display:none}.view.on{display:block}
+
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--sheet)}
+.seg button{border:0;background:none;padding:6px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--zi-soft);color:var(--zi);font-weight:700}
+select,input[type=text],input[type=number],textarea{background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+.btn{border:1px solid var(--line);background:var(--sheet);border-radius:6px;padding:6px 14px;cursor:pointer}
+.btn.primary{background:var(--zi);border-color:var(--zi);color:var(--sheet)}
+.btn.danger{color:var(--bad)}
+
+/* 對照：大字星名 */
+.focus{display:flex;align-items:flex-end;gap:18px;margin:4px 0 20px;flex-wrap:wrap}
+.focus h2{font-family:var(--serif);font-weight:900;font-size:clamp(40px,8vw,72px);line-height:1;margin:0;letter-spacing:.06em;color:var(--zi)}
+.focus p{margin:0 0 6px;color:var(--muted);max-width:40em}
+
+.rows{border-top:2px solid var(--ink)}
+.row{display:grid;grid-template-columns:5.5em 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row.empty .pname{color:var(--muted);font-weight:400}
+.pname{font-family:var(--serif);font-weight:600;font-size:18px}
+.pname span{display:block;font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400}
+.hits{display:flex;flex-direction:column;gap:6px}
+.hit{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.who{font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.who:hover{text-decoration-color:var(--zi)}
+.with{color:var(--muted);font-size:13px}
+.note{margin-top:6px}
+.note summary{cursor:pointer;color:var(--muted);font-size:13px;list-style:none}
+.note summary::before{content:"＋ "}.note[open] summary::before{content:"－ "}
+.note summary.has{color:var(--zi)}
+.note textarea{width:100%;min-height:70px;margin-top:6px;resize:vertical}
+
+.tbl-wrap{overflow-x:auto;border-top:2px solid var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{text-align:left;vertical-align:top;padding:10px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:13px}
+td.name{font-weight:700;white-space:nowrap}
+
+/* 星曜標記 */
+.s{white-space:nowrap}
+.s.major{font-family:var(--serif);font-weight:900;color:var(--ink)}
+.s.soft{color:var(--good)} .s.tough{color:var(--bad)} .s.adj{color:var(--muted)}
+.s .b{font-size:.75em;color:var(--muted);margin-left:1px;font-family:var(--sans);font-weight:400}
+.hua{display:inline-block;font-size:11px;line-height:1;padding:3px 4px;border-radius:3px;color:#fff;margin-left:2px;vertical-align:1px;font-family:var(--sans);font-weight:500}
+.hua.祿{background:var(--lu)}.hua.權{background:var(--quan)}.hua.科{background:var(--ke)}.hua.忌{background:var(--ji)}
+.clickable{cursor:pointer}.clickable:hover{text-decoration:underline}
+
+/* 命盤 */
+.chart-wrap{overflow-x:auto}
+.chart{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));grid-template-rows:repeat(4,minmax(170px,auto));border:2px solid var(--ink);background:var(--sheet);min-width:620px}
+.cell{border:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:4px;position:relative}
+.cell.hl{background:var(--zi-soft)}
+.cell .majors{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:18px}
+.cell .minors{display:flex;flex-wrap:wrap;gap:0 8px;font-size:14px}
+.cell .adjs{display:flex;flex-wrap:wrap;gap:0 6px;font-size:12px}
+.cell .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:4px}
+.cell .pal{font-family:var(--serif);font-weight:600;font-size:16px}
+.cell .pal.ming{color:var(--zi)}
+.cell .gz{font-size:12px;color:var(--muted);text-align:right}
+.tag{font-size:11px;border:1px solid var(--zi);color:var(--zi);border-radius:3px;padding:0 4px;margin-left:4px;vertical-align:2px}
+.center{grid-column:2/4;grid-row:2/4;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.center h3{font-family:var(--serif);font-weight:900;font-size:30px;margin:0 0 6px;letter-spacing:.06em}
+.center dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:14px}
+.center dt{color:var(--muted)}.center dd{margin:0}
+.legend{font-size:13px;color:var(--muted);margin-top:10px}
+
+/* 朋友 */
+.people{display:grid;gap:24px;grid-template-columns:minmax(0,1fr) minmax(280px,360px);align-items:start}
+@media (max-width:760px){.people{grid-template-columns:1fr}}
+.plist{border-top:2px solid var(--ink)}
+.pitem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pitem .meta{flex:1;min-width:0}
+.pitem .meta b{font-size:16px}
+.pitem .meta div{color:var(--muted);font-size:13px}
+form.card{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+form.card h3{margin:0;font-family:var(--serif);font-size:18px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+label.f > *{color:var(--ink);font-size:15px}
+.ymd{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px}
+.inline{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+.err{color:var(--bad);font-size:13px;min-height:1em}
+.io{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+
+.empty-state{padding:40px 0;text-align:left;max-width:34em}
+.empty-state h2{font-family:var(--serif);font-size:26px;margin:0 0 8px}
+.empty-state p{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">星曜對照簿 <small>紫微斗數學習用</small></div>
+    <nav>
+      <button data-view="compare" aria-current="true">對照</button>
+      <button data-view="chart">命盤</button>
+      <button data-view="people">朋友</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 對照 -->
+  <section class="view on" id="v-compare">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="對照方式">
+        <button data-mode="star" aria-pressed="true">以星找宮</button>
+        <button data-mode="palace" aria-pressed="false">以宮看星</button>
+      </div>
+      <select id="starSel" aria-label="選擇星曜"></select>
+      <select id="palSel" aria-label="選擇宮位" hidden></select>
+    </div>
+    <div id="compareOut"></div>
+  </section>
+
+  <!-- 命盤 -->
+  <section class="view" id="v-chart">
+    <div class="controls">
+      <select id="personSel" aria-label="選擇朋友"></select>
+      <span class="legend">點盤上的星曜，會跳到「對照」看所有朋友的這顆星</span>
+    </div>
+    <div id="chartOut"></div>
+  </section>
+
+  <!-- 朋友 -->
+  <section class="view" id="v-people">
+    <div class="people">
+      <div>
+        <div class="plist" id="plist"></div>
+        <div class="io">
+          <button class="btn" id="exportBtn">匯出備份（JSON）</button>
+          <label class="btn">匯入備份<input type="file" id="importFile" accept="application/json" hidden></label>
+          <button class="btn" id="sampleBtn">加入兩個範例</button>
+        </div>
+      </div>
+      <form class="card" id="pform" autocomplete="off">
+        <h3 id="formTitle">新增朋友</h3>
+        <input type="hidden" id="fId">
+        <label class="f">名字或代號<input type="text" id="fName" required maxlength="20"></label>
+        <div class="inline">
+          <label><input type="radio" name="g" value="女" checked> 女</label>
+          <label><input type="radio" name="g" value="男"> 男</label>
+          <span style="flex:1"></span>
+          <label><input type="radio" name="cal" value="solar" checked> 國曆</label>
+          <label><input type="radio" name="cal" value="lunar"> 農曆</label>
+        </div>
+        <label class="f">出生日期（年／月／日）
+          <div class="ymd">
+            <input type="number" id="fY" placeholder="1990" min="1900" max="2100" required aria-label="年">
+            <input type="number" id="fM" placeholder="月" min="1" max="12" required aria-label="月">
+            <input type="number" id="fD" placeholder="日" min="1" max="31" required aria-label="日">
+          </div>
+        </label>
+        <label class="inline" id="leapWrap" hidden><input type="checkbox" id="fLeap"> 閏月</label>
+        <label class="f">出生時辰<select id="fTime"></select></label>
+        <label class="f">備註（選填）<input type="text" id="fNote" maxlength="60" placeholder="例如：個性、職業、已知事件"></label>
+        <div class="err" id="fErr"></div>
+        <div class="inline">
+          <button class="btn primary" type="submit" id="saveBtn">儲存</button>
+          <button class="btn" type="button" id="cancelBtn" hidden>取消編輯</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+'use strict';
+if (!window.iztro) {
+  document.querySelector('main').innerHTML = '<div class="empty-state"><h2>排盤程式沒有載入</h2><p>請確認網路連線後重新整理。這個網頁需要從 cdn.jsdelivr.net 載入 iztro 排盤函式庫。</p></div>';
+  return;
+}
+const { astro } = iztro;
+
+/* ---------- 常數 ---------- */
+const TIMES = ['早子時 00:00–00:59','丑時 01–03','寅時 03–05','卯時 05–07','辰時 07–09','巳時 09–11','午時 11–13','未時 13–15','申時 15–17','酉時 17–19','戌時 19–21','亥時 21–23','晚子時 23:00–23:59'];
+const PALACES = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','僕役','官祿','田宅','福德','父母'];
+const GROUPS = [
+  ['十四主星', ['紫微','天機','太陽','武曲','天同','廉貞','天府','太陰','貪狼','巨門','天相','天梁','七殺','破軍']],
+  ['六煞', ['擎羊','陀羅','火星','鈴星','地空','地劫']],
+  ['六吉', ['左輔','右弼','文昌','文曲','天魁','天鉞']],
+  ['祿馬', ['祿存','天馬']],
+  ['生年四化', ['化祿','化權','化科','化忌']],
+];
+// 盤面位置：地支 → [row, col]
+const POS = {'巳':[1,1],'午':[1,2],'未':[1,3],'申':[1,4],'辰':[2,1],'酉':[2,4],'卯':[3,1],'戌':[3,4],'寅':[4,1],'丑':[4,2],'子':[4,3],'亥':[4,4]};
+
+/* ---------- 儲存 ---------- */
+const KEY_P = 'ziwei.people.v1', KEY_N = 'ziwei.notes.v1', KEY_UI = 'ziwei.ui.v1';
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { toast('無法儲存到瀏覽器，請記得匯出備份'); } };
+let people = load(KEY_P, []);
+let notes = load(KEY_N, {});
+let ui = Object.assign({ view:'compare', mode:'star', star:'紫微', palace:'命宮', person:null }, load(KEY_UI, {}));
+const saveUI = () => save(KEY_UI, ui);
+
+/* ---------- 排盤 ---------- */
+const cache = new Map();
+function chartOf(p) {
+  const key = [p.calendar, p.y, p.m, p.d, p.leap, p.time, p.gender].join('|');
+  const c = cache.get(p.id);
+  if (c && c.key === key) return c.a;
+  const ds = `${p.y}-${p.m}-${p.d}`;
+  let a = null;
+  try {
+    a = p.calendar === 'lunar'
+      ? astro.byLunar(ds, p.time, p.gender, !!p.leap, true, 'zh-TW')
+      : astro.bySolar(ds, p.time, p.gender, true, 'zh-TW');
+  } catch (e) { console.error(e); }
+  cache.set(p.id, { key, a });
+  return a;
+}
+const palName = n => n.endsWith('宮') ? n : n + '宮';
+const shortPal = n => n.replace(/宮$/, '') || n;
+const allStars = pal => [
+  ...pal.majorStars.map(s => ({...s, kind:'major'})),
+  ...pal.minorStars.map(s => ({...s, kind: s.type === 'tough' ? 'tough' : 'soft'})),
+  ...pal.adjectiveStars.map(s => ({...s, kind:'adj'})),
+];
+function findStar(a, starName) {
+  const hua = starName.startsWith('化') ? starName.slice(1) : null;
+  for (const pal of a.palaces) {
+    for (const s of allStars(pal)) {
+      if (hua ? s.mutagen === hua : s.name === starName) return { pal, s };
+    }
+  }
+  return null;
+}
+
+/* ---------- 小工具 ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function starHTML(s, clickable = true) {
+  const b = s.brightness ? `<span class="b">${esc(s.brightness)}</span>` : '';
+  const h = s.mutagen ? `<span class="hua ${esc(s.mutagen)}">${esc(s.mutagen)}</span>` : '';
+  const c = clickable ? ' clickable' : '';
+  return `<span class="s ${s.kind}${c}" data-star="${esc(s.name)}">${esc(s.name)}${b}${h}</span>`;
+}
+let tt;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2200); }
+function noteBlock(key, label) {
+  const v = notes[key] || '';
+  return `<details class="note"${v ? '' : ''}><summary class="${v ? 'has' : ''}">${v ? '我的筆記：' + esc(v.slice(0, 30)) + (v.length > 30 ? '…' : '') : label}</summary>
+    <textarea data-note="${esc(key)}" placeholder="寫下你觀察到的共通點、書上的解釋…">${esc(v)}</textarea></details>`;
+}
+
+/* ---------- 對照 ---------- */
+function fillSelectors() {
+  const extra = new Set();
+  people.forEach(p => { const a = chartOf(p); a && a.palaces.forEach(pal => pal.adjectiveStars.forEach(s => extra.add(s.name))); });
+  const groups = [...GROUPS];
+  if (extra.size) groups.push(['雜曜', [...extra]]);
+  $('#starSel').innerHTML = groups.map(([g, list]) =>
+    `<optgroup label="${g}">${list.map(n => `<option${n === ui.star ? ' selected' : ''}>${n}</option>`).join('')}</optgroup>`).join('');
+  $('#palSel').innerHTML = PALACES.map(n => `<option value="${n}"${n === ui.palace ? ' selected' : ''}>${palName(n)}</option>`).join('');
+}
+
+function renderCompare() {
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === ui.mode));
+  $('#starSel').hidden = ui.mode !== 'star';
+  $('#palSel').hidden = ui.mode !== 'palace';
+  const out = $('#compareOut');
+  if (!people.length) { out.innerHTML = emptyState(); return; }
+  out.innerHTML = ui.mode === 'star' ? renderByStar() : renderByPalace();
+}
+
+function renderByStar() {
+  const star = ui.star;
+  const buckets = Object.fromEntries(PALACES.map(n => [n, []]));
+  const missing = [];
+  people.forEach(p => {
+    const a = chartOf(p); if (!a) return;
+    const f = findStar(a, star);
+    if (!f) { missing.push(p.name); return; }
+    const key = shortPal(f.pal.name) === '命' ? '命宮' : shortPal(f.pal.name);
+    (buckets[key] ||= []).push({ p, ...f });
+  });
+  const isHua = star.startsWith('化');
+  const rows = PALACES.map(n => {
+    const list = buckets[n];
+    const hits = list.map(({ p, pal, s }) => {
+      const others = allStars(pal).filter(x => x.name !== s.name && x.kind !== 'adj');
+      return `<div class="hit"><span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span>
+        ${starHTML(s, false)}${isHua ? '' : ''}
+        <span class="with">${pal.heavenlyStem}${pal.earthlyBranch}${pal.isBodyPalace ? '・身宮' : ''}　同宮：${others.length ? others.map(x => starHTML(x)).join('、') : '（空宮）'}</span></div>`;
+    }).join('');
+    return `<div class="row${list.length ? '' : ' empty'}">
+      <div class="pname">${palName(n)}<span>${list.length} 人</span></div>
+      <div class="hits">${hits || '<span class="with">—</span>'}
+        ${noteBlock(`${star}@${n}`, `寫筆記：${star}在${palName(n)}`)}</div></div>`;
+  }).join('');
+  return `<div class="focus"><h2>${esc(star)}</h2>
+    <p>${people.length} 位朋友的${esc(star)}分別落在哪一宮。${missing.length ? '盤上找不到的：' + missing.map(esc).join('、') : ''}</p></div>
+    <div class="rows">${rows}</div>`;
+}
+
+function renderByPalace() {
+  const n = ui.palace;
+  const rows = people.map(p => {
+    const a = chartOf(p); if (!a) return '';
+    const pal = a.palaces.find(x => (shortPal(x.name) === '命' ? '命宮' : shortPal(x.name)) === n);
+    if (!pal) return '';
+    const st = allStars(pal);
+    const pick = k => st.filter(s => s.kind === k).map(s => starHTML(s)).join('、') || '—';
+    return `<tr><td class="name"><span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span></td>
+      <td>${pal.heavenlyStem}${pal.earthlyBranch}${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}</td>
+      <td>${st.some(s => s.kind === 'major') ? pick('major') : '<span class="with">空宮</span>'}</td>
+      <td>${pick('soft')}</td><td>${pick('tough')}</td><td style="font-size:13px">${pick('adj')}</td></tr>`;
+  }).join('');
+  return `<div class="focus"><h2>${palName(n)}</h2><p>每位朋友的${palName(n)}裡有哪些星。點星名可以切到「以星找宮」。</p></div>
+    <div class="tbl-wrap"><table><thead><tr><th>朋友</th><th>干支</th><th>主星</th><th>吉星・祿馬</th><th>煞星</th><th>雜曜</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>${noteBlock(`宮:${n}`, `寫筆記：${palName(n)}`)}`;
+}
+
+function emptyState() {
+  return `<div class="empty-state"><h2>先加入第一位朋友</h2>
+    <p>輸入出生年月日、時辰和性別，網頁會自動排出命盤，接著就能在這裡一次比較所有人的同一顆星。</p>
+    <button class="btn primary" data-go="people">去新增朋友</button></div>`;
+}
+
+/* ---------- 命盤 ---------- */
+function renderChart() {
+  const sel = $('#personSel');
+  const out = $('#chartOut');
+  if (!people.length) { sel.hidden = true; out.innerHTML = emptyState(); return; }
+  sel.hidden = false;
+  if (!people.some(p => p.id === ui.person)) ui.person = people[0].id;
+  sel.innerHTML = people.map(p => `<option value="${esc(p.id)}"${p.id === ui.person ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+  const p = people.find(x => x.id === ui.person);
+  const a = chartOf(p);
+  if (!a) { out.innerHTML = '<p class="err">這組生日排不出盤，請到「朋友」檢查日期是否正確。</p>'; return; }
+  const cells = a.palaces.map(pal => {
+    const [r, c] = POS[pal.earthlyBranch];
+    const st = allStars(pal);
+    const hl = findStar({ palaces:[pal] }, ui.star) ? ' hl' : '';
+    const isMing = pal.name === '命宮';
+    return `<div class="cell${hl}" style="grid-row:${r};grid-column:${c}">
+      <div class="majors">${st.filter(s => s.kind === 'major').map(s => starHTML(s)).join('')}</div>
+      <div class="minors">${st.filter(s => s.kind === 'soft' || s.kind === 'tough').map(s => starHTML(s)).join('')}</div>
+      <div class="adjs">${st.filter(s => s.kind === 'adj').map(s => starHTML(s)).join('')}</div>
+      <div class="foot"><div class="pal${isMing ? ' ming' : ''}">${palName(pal.name)}${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}</div>
+      <div class="gz">${pal.decadal.range.join('–')}<br>${pal.heavenlyStem}${pal.earthlyBranch}</div></div></div>`;
+  }).join('');
+  out.innerHTML = `<div class="chart-wrap"><div class="chart">${cells}
+    <div class="center"><h3>${esc(p.name)}</h3><dl>
+      <dt>性別</dt><dd>${esc(a.gender)}</dd>
+      <dt>國曆</dt><dd>${esc(a.solarDate)}</dd>
+      <dt>農曆</dt><dd>${esc(a.lunarDate)}　${esc(a.time)}</dd>
+      <dt>四柱</dt><dd>${esc(a.chineseDate)}</dd>
+      <dt>五行局</dt><dd>${esc(a.fiveElementsClass)}</dd>
+      <dt>命主／身主</dt><dd>${esc(a.soul)}／${esc(a.body)}</dd>
+      ${p.note ? `<dt>備註</dt><dd>${esc(p.note)}</dd>` : ''}</dl></div></div></div>
+    <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。</p>`;
+}
+
+/* ---------- 朋友 ---------- */
+function renderPeople() {
+  $('#plist').innerHTML = people.length ? people.map(p => {
+    const a = chartOf(p);
+    const ming = a && a.palaces.find(x => x.name === '命宮');
+    const mj = ming ? (ming.majorStars.map(s => s.name).join('') || '命無主星') : '排盤失敗';
+    return `<div class="pitem"><div class="meta"><b>${esc(p.name)}</b>
+      <div>${p.gender}・${p.calendar === 'lunar' ? '農曆' : '國曆'} ${p.y}/${p.m}/${p.d}${p.leap ? '（閏）' : ''}・${TIMES[p.time].split(' ')[0]}・${esc(mj)}</div></div>
+      <button class="btn" data-edit="${esc(p.id)}">編輯</button>
+      <button class="btn danger" data-del="${esc(p.id)}">刪除</button></div>`;
+  }).join('') : '<p class="with" style="padding:12px 0">還沒有朋友。用右邊的表單新增，或先加入範例試試看。</p>';
+}
+$('#fTime').innerHTML = TIMES.map((t, i) => `<option value="${i}">${t}</option>`).join('');
+
+function resetForm() {
+  $('#pform').reset(); $('#fId').value = ''; $('#fErr').textContent = '';
+  $('#formTitle').textContent = '新增朋友'; $('#cancelBtn').hidden = true; $('#leapWrap').hidden = true;
+}
+function fillForm(p) {
+  $('#fId').value = p.id; $('#fName').value = p.name;
+  document.querySelector(`input[name=g][value="${p.gender}"]`).checked = true;
+  document.querySelector(`input[name=cal][value="${p.calendar}"]`).checked = true;
+  $('#fY').value = p.y; $('#fM').value = p.m; $('#fD').value = p.d; $('#fLeap').checked = !!p.leap;
+  $('#leapWrap').hidden = p.calendar !== 'lunar';
+  $('#fTime').value = p.time; $('#fNote').value = p.note || '';
+  $('#formTitle').textContent = '編輯：' + p.name; $('#cancelBtn').hidden = false;
+  $('#fName').focus();
+}
+document.querySelectorAll('input[name=cal]').forEach(r => r.addEventListener('change', () => {
+  $('#leapWrap').hidden = document.querySelector('input[name=cal]:checked').value !== 'lunar';
+}));
+$('#cancelBtn').addEventListener('click', resetForm);
+$('#pform').addEventListener('submit', e => {
+  e.preventDefault();
+  const p = {
+    id: $('#fId').value || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: $('#fName').value.trim(),
+    gender: document.querySelector('input[name=g]:checked').value,
+    calendar: document.querySelector('input[name=cal]:checked').value,
+    y: +$('#fY').value, m: +$('#fM').value, d: +$('#fD').value,
+    leap: $('#fLeap').checked && document.querySelector('input[name=cal]:checked').value === 'lunar',
+    time: +$('#fTime').value, note: $('#fNote').value.trim(),
+  };
+  if (p.calendar === 'solar') {
+    const dt = new Date(p.y, p.m - 1, p.d);
+    if (dt.getMonth() !== p.m - 1) { $('#fErr').textContent = `${p.y} 年 ${p.m} 月沒有 ${p.d} 日，請檢查日期。`; return; }
+  }
+  cache.delete(p.id);
+  if (!chartOf(p)) { $('#fErr').textContent = '這組生日排不出盤。農曆請確認月份與閏月是否正確。'; return; }
+  const i = people.findIndex(x => x.id === p.id);
+  if (i >= 0) people[i] = p; else people.push(p);
+  save(KEY_P, people); resetForm(); refresh(); toast(i >= 0 ? '已更新' : `已新增 ${p.name}`);
+});
+
+$('#plist').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+  if (ed) fillForm(people.find(p => p.id === ed.dataset.edit));
+  if (del) {
+    const p = people.find(x => x.id === del.dataset.del);
+    if (confirm(`確定刪除「${p.name}」？`)) { people = people.filter(x => x !== p); save(KEY_P, people); refresh(); toast('已刪除'); }
+  }
+});
+
+/* 匯出／匯入 */
+$('#exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ version:1, people, notes }, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ziwei-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.people)) throw 0;
+    const ids = new Set(people.map(p => p.id));
+    const add = data.people.filter(p => !ids.has(p.id));
+    people = people.concat(add);
+    notes = Object.assign({}, data.notes || {}, notes);
+    save(KEY_P, people); save(KEY_N, notes); refresh();
+    toast(`匯入 ${add.length} 位朋友`);
+  } catch { toast('這個檔案不是本網頁匯出的備份'); }
+  e.target.value = '';
+});
+$('#sampleBtn').addEventListener('click', () => {
+  people.push(
+    { id:'demoA', name:'範例・小安', gender:'女', calendar:'solar', y:1992, m:3, d:14, leap:false, time:6, note:'範例資料，可刪除' },
+    { id:'demoB', name:'範例・阿哲', gender:'男', calendar:'solar', y:1988, m:11, d:2, leap:false, time:9, note:'範例資料，可刪除' });
+  people = people.filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+  save(KEY_P, people); refresh(); toast('已加入範例');
+});
+
+/* ---------- 導覽與事件 ---------- */
+function go(view) {
+  ui.view = view; saveUI();
+  document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.view === view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + view));
+  refresh(); window.scrollTo(0, 0);
+}
+function refresh() {
+  if (ui.view === 'compare') { fillSelectors(); renderCompare(); }
+  if (ui.view === 'chart') renderChart();
+  if (ui.view === 'people') renderPeople();
+}
+document.querySelector('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.view); });
+document.querySelector('.seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ui.mode = b.dataset.mode; saveUI(); renderCompare(); } });
+$('#starSel').addEventListener('change', e => { ui.star = e.target.value; saveUI(); renderCompare(); });
+$('#palSel').addEventListener('change', e => { ui.palace = e.target.value; saveUI(); renderCompare(); });
+$('#personSel').addEventListener('change', e => { ui.person = e.target.value; saveUI(); renderChart(); });
+
+document.querySelector('main').addEventListener('click', e => {
+  const s = e.target.closest('.s.clickable');
+  const w = e.target.closest('.who');
+  const g = e.target.closest('[data-go]');
+  if (s) { ui.star = s.dataset.star; ui.mode = 'star'; go('compare'); }
+  else if (w) { ui.person = w.dataset.person; go('chart'); }
+  else if (g) go(g.dataset.go);
+});
+let nt;
+document.querySelector('main').addEventListener('input', e => {
+  const t = e.target.closest('textarea[data-note]'); if (!t) return;
+  const v = t.value.trim();
+  if (v) notes[t.dataset.note] = v; else delete notes[t.dataset.note];
+  clearTimeout(nt); nt = setTimeout(() => save(KEY_N, notes), 400);
+});
+
+go(ui.view);
+})();
+</script>
+</body>
+</html>
