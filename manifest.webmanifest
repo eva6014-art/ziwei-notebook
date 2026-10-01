@@ -1,0 +1,16 @@
+{
+  "name": "星曜對照簿",
+  "short_name": "星曜對照簿",
+  "description": "紫微斗數學習用：比較朋友命盤、記錄事件與筆記",
+  "lang": "zh-Hant-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDEBF2",
+  "theme_color": "#5B3E8C",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
