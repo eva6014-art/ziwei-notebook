@@ -26,7 +26,9 @@
     --lu:#5CC091; --quan:#E0A84A; --ke:#7FA8E6; --ji:#F07A70; --good:#7FA8E6; --bad:#F07A70;
   }
 }
-:root[data-theme="dark"]{
+:root{--L-decadal:#6A3FA0;--L-yearly:#0F7C86;--L-monthly:#A2561B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--L-decadal:#C3A3F0;--L-yearly:#5CC8D2;--L-monthly:#E8A06A}}
+:root[data-theme="dark"]{--L-decadal:#C3A3F0;--L-yearly:#5CC8D2;--L-monthly:#E8A06A;
   --paper:#16131F; --sheet:#1F1B2B; --ink:#ECE8F5; --muted:#A39CB8; --line:#3A3450;
   --zi:#B79AE6; --zi-soft:#2F2744;
   --lu:#5CC091; --quan:#E0A84A; --ke:#7FA8E6; --ji:#F07A70; --good:#7FA8E6; --bad:#F07A70;
@@ -141,6 +143,37 @@ td.name{font-weight:700;white-space:nowrap}
 .pdetail dt{color:var(--muted)}.pdetail dd{margin:0}
 .pdetail dd.big{font-size:17px}
 .pd-tip{font-size:12px;color:var(--muted);margin:8px 0 0}
+.horbox{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
+.horbox .top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:14px}
+.horbox .top b{font-family:var(--serif)}
+.lyr{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.lyr i{font-style:normal;font-weight:700}
+.lyr.decadal i{color:var(--L-decadal)}.lyr.yearly i{color:var(--L-yearly)}.lyr.monthly i{color:var(--L-monthly)}
+.hrow{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;align-items:stretch}
+.hrow .rl{flex:none;font-size:12px;color:var(--muted);width:2.6em;align-self:center}
+.chip{flex:none;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;line-height:1.3;text-align:center}
+.chip small{display:block;font-size:11px;color:var(--muted)}
+.chip[aria-pressed="true"]{color:#fff;border-color:transparent}
+.chip[aria-pressed="true"] small{color:rgba(255,255,255,.85)}
+.hrow.decadal .chip[aria-pressed="true"]{background:var(--L-decadal)}
+.hrow.yearly .chip[aria-pressed="true"]{background:var(--L-yearly)}
+.hrow.monthly .chip[aria-pressed="true"]{background:var(--L-monthly)}
+.hsum{font-size:13px;display:flex;flex-direction:column;gap:2px}
+.hsum .k{font-weight:700;margin-right:6px}
+.hsum .decadal .k{color:var(--L-decadal)}.hsum .yearly .k{color:var(--L-yearly)}.hsum .monthly .k{color:var(--L-monthly)}
+.ht{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:3px;padding:0 3px;margin-left:2px;line-height:1.5}
+.ht.decadal{background:var(--L-decadal)}.ht.yearly{background:var(--L-yearly)}.ht.monthly{background:var(--L-monthly)}
+.htags{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:2px;margin-top:auto}
+.htags + .foot3{margin-top:2px}
+.ht{white-space:nowrap}
+.lh{display:inline-block;font-size:10px;line-height:1;padding:2px 3px;border-radius:3px;margin-left:2px;vertical-align:2px;font-weight:700;font-family:var(--sans);background:var(--sheet);border:1px solid currentColor}
+.lh.祿{color:var(--lu)}.lh.權{color:var(--quan)}.lh.科{color:var(--ke)}.lh.忌{color:var(--ji)}
+.lh::first-letter{color:var(--muted)}
+.hstars{display:flex;flex-wrap:wrap;gap:0 6px;font-size:12px}
+.hstars .decadal{color:var(--L-decadal)}.hstars .yearly{color:var(--L-yearly)}.hstars .monthly{color:var(--L-monthly)}
+.cell.lming-decadal{box-shadow:inset 0 0 0 2px var(--L-decadal)}
+.cell.lming-yearly{box-shadow:inset 0 0 0 2px var(--L-yearly)}
+.cell.lming-monthly{box-shadow:inset 0 0 0 2px var(--L-monthly)}
 .flybar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px}
 .flybar .lbl{font-size:13px;color:var(--muted)}
 .hb{border:1.5px solid var(--line);background:var(--sheet);border-radius:6px;min-width:36px;padding:4px 8px;cursor:pointer;font-weight:700;font-family:var(--serif)}
@@ -163,7 +196,7 @@ svg.flylines text{font-size:11px;font-family:var(--sans);font-weight:700;paint-o
   main{padding:14px 8px 60px}
   .bar{padding:10px 12px;gap:8px}
   .brand{font-size:19px}.brand small{display:none}
-  nav button{padding:6px 11px}
+  nav button{padding:6px 9px}
   .chart-wrap{overflow:visible}
   .chart{min-width:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(118px,auto))}
   .cell{padding:3px 3px 2px;gap:1px;overflow:hidden}
@@ -173,7 +206,11 @@ svg.flylines text{font-size:11px;font-family:var(--sans);font-weight:700;paint-o
   .cell .adjs{font-size:9px;gap:0 2px;line-height:1.3}
   .cell .s .b{font-size:9px}
   .cell .hua{font-size:9px;padding:1px 2px;margin-left:1px}
-  .cell .fly{font-size:8px;padding:0 1px;margin-left:1px;vertical-align:1px}
+  .cell .fly,.cell .lh{font-size:8px;padding:0 1px;margin-left:1px;vertical-align:1px}
+  .cell .ht{font-size:8px;padding:0 1px;margin-left:1px}
+  .cell .sw{white-space:normal}
+  .cell .sw .s{white-space:nowrap}
+  .cell .hstars{font-size:9px;gap:0 2px}
   .cell .ages{display:none}
   .cell .foot3{grid-template-columns:1fr auto;gap:2px}
   .cell .gods{display:none}
@@ -218,6 +255,26 @@ label.f > *{color:var(--ink);font-size:15px}
 .empty-state{padding:40px 0;text-align:left;max-width:34em}
 .empty-state h2{font-family:var(--serif);font-size:26px;margin:0 0 8px}
 .empty-state p{color:var(--muted)}
+.nmap-wrap{overflow-x:auto;margin:0 0 24px}
+.nmap{border-collapse:collapse;min-width:0;width:auto;font-size:13px}
+.nmap th,.nmap td{padding:3px 4px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+.nmap th{font-weight:500;color:var(--muted);font-size:12px;white-space:nowrap}
+.nmap th.rh{text-align:left;font-family:var(--serif);font-weight:600;color:var(--ink);font-size:14px;padding-right:10px}
+.nmap .dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--zi);cursor:pointer;border:0;padding:0}
+.nmap .nil{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--line)}
+.ngroup{margin-bottom:28px}
+.ngroup > h3{font-family:var(--serif);font-weight:900;font-size:26px;color:var(--zi);margin:0 0 8px;border-bottom:2px solid var(--ink);padding-bottom:4px;display:flex;align-items:baseline;gap:10px}
+.ngroup > h3 small{font-family:var(--sans);font-size:13px;color:var(--muted);font-weight:400}
+.ncard{border-bottom:1px solid var(--line);padding:10px 0;scroll-margin-top:80px}
+.ncard.flash{animation:flash 1.2s}
+@keyframes flash{from{background:var(--zi-soft)}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){.ncard.flash{animation:none;background:var(--zi-soft)}}
+.ncard .nh{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-bottom:4px}
+.ncard .nh b{font-family:var(--serif);font-size:17px}
+.ncard .nh .go{font-size:13px;color:var(--zi);cursor:pointer;border:0;background:none;padding:0;text-decoration:underline;text-underline-offset:3px}
+.ncard textarea{width:100%;min-height:60px;resize:vertical;line-height:1.6}
+.ncard .ppl{font-size:13px;color:var(--muted);margin-top:4px}
+mark{background:var(--zi-soft);color:inherit;border-radius:2px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -230,6 +287,7 @@ label.f > *{color:var(--ink);font-size:15px}
     <nav>
       <button data-view="compare" aria-current="true">對照</button>
       <button data-view="chart">命盤</button>
+      <button data-view="notes">筆記</button>
       <button data-view="people">朋友</button>
     </nav>
   </div>
@@ -263,6 +321,18 @@ label.f > *{color:var(--ink);font-size:15px}
   </section>
 
   <!-- 朋友 -->
+  <section class="view" id="v-notes">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="筆記分組">
+        <button data-ngroup="star">依星曜</button>
+        <button data-ngroup="palace">依宮位</button>
+      </div>
+      <input type="text" id="noteSearch" placeholder="搜尋筆記內容、星名、宮名" aria-label="搜尋筆記" style="flex:1;min-width:180px">
+      <button class="btn" id="noteMdBtn">下載全部筆記（Markdown）</button>
+    </div>
+    <div id="notesOut"></div>
+  </section>
+
   <section class="view" id="v-people">
     <div class="people">
       <div>
@@ -411,6 +481,57 @@ function flyMarks(a) {
   return marks;
 }
 const godName = n => n === '官府' ? '官符' : n;
+/* ---------- 運限（大限・流年・流月） ---------- */
+const LAYERS = ['decadal','yearly','monthly'];
+const LNAME = { decadal:'大限', yearly:'流年', monthly:'流月' };
+const LPFX = { decadal:'大', yearly:'年', monthly:'月' };
+const ABBR = { 命宮:'命', 兄弟:'兄', 夫妻:'夫', 子女:'子', 財帛:'財', 疾厄:'疾', 遷移:'遷', 僕役:'友', 交友:'友', 官祿:'官', 田宅:'田', 福德:'福', 父母:'父' };
+const MONTHS = ['正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','臘月'];
+const yearGZ = y => '甲乙丙丁戊己庚辛壬癸'[((y - 4) % 10 + 10) % 10] + BR[((y - 4) % 12 + 12) % 12];
+let todayLunar = null;
+function getTodayLunar() {
+  if (todayLunar) return todayLunar;
+  const d = new Date();
+  const r = astro.bySolar(`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`, 6, '女', true, 'zh-TW').rawDates.lunarDate;
+  return (todayLunar = { y: r.lunarYear, m: r.lunarMonth });
+}
+function horOf(a) {
+  if (!ui.horOn) return null;
+  const t = getTodayLunar();
+  const by = a.rawDates.lunarDate.lunarYear;
+  const y = Math.max(ui.horY || t.y, by), m = ui.horM || t.m;
+  try {
+    const sd = astro.byLunar(`${y}-${m}-15`, 6, '女', false, true, 'zh-TW').solarDate;
+    const h = a.horoscope(sd, 6);
+    h._y = y; h._m = m;
+    return h;
+  } catch (e) { console.error(e); return null; }
+}
+const activeLayers = () => LAYERS.filter(L => (ui.layers || { decadal:true, yearly:true, monthly:false })[L]);
+function horBar(a, h) {
+  const t = getTodayLunar();
+  const by = a.rawDates.lunarDate.lunarYear;
+  const on = !!ui.horOn;
+  const lay = ui.layers || { decadal:true, yearly:true, monthly:false };
+  let html = `<div class="horbox"><div class="top">
+    <label class="lyr"><input type="checkbox" data-hor-on ${on ? 'checked' : ''}> <b>顯示運限</b></label>`;
+  if (!on) return html + `<span class="with">打開後可以選大限、流年、流月，盤上會疊出運限宮位與四化。</span></div></div>`;
+  html += LAYERS.map(L => `<label class="lyr ${L}"><input type="checkbox" data-layer="${L}" ${lay[L] ? 'checked' : ''}> <i>${LNAME[L]}</i></label>`).join('')
+    + `<button class="btn" data-hor-today style="padding:3px 10px">回到今年本月</button></div>`;
+  const age = h._y - by + 1;
+  const decs = [...a.palaces].sort((p, q) => p.decadal.range[0] - q.decadal.range[0]);
+  const curDec = decs.find(p => age >= p.decadal.range[0] && age <= p.decadal.range[1]) || decs[0];
+  html += `<div class="hrow decadal"><span class="rl">大限</span>${decs.map(p => `<button class="chip" data-dec="${p.decadal.range[0]}" aria-pressed="${p === curDec}">${p.decadal.range.join('–')}<small>${p.decadal.heavenlyStem}${p.decadal.earthlyBranch} ${palName(p.name)}</small></button>`).join('')}</div>`;
+  const years = []; for (let g = curDec.decadal.range[0]; g <= curDec.decadal.range[1]; g++) years.push(by + g - 1);
+  html += `<div class="hrow yearly"><span class="rl">流年</span>${years.map(y => `<button class="chip" data-year="${y}" aria-pressed="${y === h._y}">${y}<small>${yearGZ(y)} ${y - by + 1}歲</small></button>`).join('')}</div>`;
+  html += `<div class="hrow monthly"><span class="rl">流月</span>${MONTHS.map((n, i) => `<button class="chip" data-month="${i + 1}" aria-pressed="${i + 1 === h._m}">${n}</button>`).join('')}</div>`;
+  html += `<div class="hsum">${activeLayers().map(L => {
+    const x = h[L], idx = x.index;
+    const natal = a.palaces.find(p => p.index === idx);
+    return `<div class="${L}"><span class="k">${LNAME[L]} ${x.heavenlyStem}${x.earthlyBranch}</span>命宮在${palName(natal.name)}（本命）　${x.mutagen.map((n, i) => `${n}<span class="hua ${HN[i]}">${HN[i]}</span>`).join(' ')}</div>`;
+  }).join('')}<div class="with" style="font-size:12px">流年、流月以農曆計；${t.y === h._y && t.m === h._m ? '目前顯示的是今年本月。' : ''}</div></div>`;
+  return html + '</div>';
+}
 const palOfStar = (a, star) => a.palaces.find(p => allStars(p).some(s => s.name === star));
 // 連鎖：從某宮開始，宮干化X飛入哪一宮，再從那一宮繼續
 function flyChain(a, startBr, hi) {
@@ -565,10 +686,13 @@ function renderChart() {
   const a = chartOf(p);
   if (!a) { out.innerHTML = '<p class="err">這組生日排不出盤，請到「朋友」檢查日期是否正確。</p>'; return; }
   const marks = flyMarks(a);
+  const h = horOf(a);
+  const lays = h ? activeLayers() : [];
+  const lhua = name => lays.map(L => { const i = h[L].mutagen.indexOf(name); return i < 0 ? '' : `<span class="lh ${HN[i]}" title="${LNAME[L]}化${HN[i]}">${LPFX[L]}${HN[i]}</span>`; }).join('');
   const yb = BR.indexOf(a.rawDates.chineseDate.yearly[1]);
   if (!a.palaces.some(x => x.earthlyBranch === ui.selBr)) ui.selBr = a.palaces.find(x => x.name === '命宮').earthlyBranch;
   const star2 = (s, br) => '<span class="sw">' + starHTML(s) + ((marks[br] || {})[s.name] || []).map(m =>
-    `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}" title="${m.dir === 'in' ? '對宮宮干化入（向心）' : '本宮宮干自化（離心）'}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('') + '</span>';
+    `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}" title="${m.dir === 'in' ? '對宮宮干化入（向心）' : '本宮宮干自化（離心）'}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('') + lhua(s.name) + '</span>';
   const cells = a.palaces.map(pal => {
     const [r, c] = POS[pal.earthlyBranch];
     const st = allStars(pal);
@@ -577,12 +701,16 @@ function renderChart() {
     const flow = [0,1,2,3,4].map(k => s0 + 12 * k).join(', ');
     const hl = findStar({ palaces:[pal] }, ui.star) ? ' hl' : '';
     const isMing = pal.name === '命宮';
-    const sel = br === ui.selBr ? ' sel' : '';
+    const sel = (br === ui.selBr ? ' sel' : '') + lays.filter(L => h[L].index === pal.index).slice(-1).map(L => ' lming-' + L).join('');
+    const htags = lays.map(L => `<span class="ht ${L}" title="${LNAME[L]}${h[L].palaceNames[pal.index]}">${LPFX[L]}${ABBR[h[L].palaceNames[pal.index]] || h[L].palaceNames[pal.index]}</span>`).join('');
+    const hst = lays.map(L => (h[L].stars?.[pal.index] || []).map(x => `<span class="${L}">${esc(x.name)}</span>`).join('')).join('');
     return `<div class="cell${hl}${sel}" data-br="${br}" style="grid-row:${r};grid-column:${c}">
       <div class="majors">${st.filter(s => s.kind === 'major').map(s => star2(s, br)).join('')}</div>
       <div class="minors">${st.filter(s => s.kind === 'soft' || s.kind === 'tough').map(s => star2(s, br)).join('')}</div>
       <div class="adjs">${st.filter(s => s.kind === 'adj').map(s => starHTML(s)).join('')}</div>
+      ${hst ? `<div class="hstars">${hst}</div>` : ''}
       <div class="ages">流年 ${flow}<br>小限 ${pal.ages.slice(0, 5).join(', ')}</div>
+      ${htags ? `<div class="htags">${htags}</div>` : ''}
       <div class="foot3">
         <div class="gods"><span class="bs">${esc(godName(pal.boshi12))}</span><br>${esc(pal.jiangqian12)}<br>${esc(pal.suiqian12)}</div>
         <div class="dec">${pal.decadal.range.join('–')}</div>
@@ -597,7 +725,7 @@ function renderChart() {
       <button data-scope="sel" aria-pressed="${(ui.scope || 'sel') === 'sel'}">選取的宮</button>
       <button data-scope="all" aria-pressed="${ui.scope === 'all'}">全盤</button>
     </div></div>`;
-  out.innerHTML = flybar + `<div class="chart-wrap"><div class="chart${ui.detail === 'simple' ? ' simple' : ''}">${cells}
+  out.innerHTML = horBar(a, h) + flybar + `<div class="chart-wrap"><div class="chart${ui.detail === 'simple' ? ' simple' : ''}">${cells}
     <div class="center"><h3>${esc(p.name)}</h3><dl>
       <dt>性別</dt><dd>${esc(a.gender)}</dd>
       <dt>國曆</dt><dd>${esc(a.solarDate)}</dd>
@@ -608,7 +736,7 @@ function renderChart() {
       <dt>五行局</dt><dd>${esc(a.fiveElementsClass)}</dd>
       <dt>命主／身主</dt><dd>${esc(a.soul)}／${esc(a.body)}</dd>
       ${p.note ? `<dt>備註</dt><dd>${esc(p.note)}</dd>` : ''}</dl></div></div></div>
-    ${palDetail(a, marks, yb)}
+    ${palDetail(a, marks, yb, h, lays)}
     <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。實心標籤是生年四化；<span class="fly 祿">→祿</span> 是本宮宮干自化（離心），<span class="fly 祿 in">←祿</span> 是對宮宮干化入（向心）。宮位左下三行依序為博士、將前、歲前十二神，右下小字為長生十二神。飛化連線：從宮干所在的宮，畫到被化的星所在的宮（自化不畫線）。</p>`;
   drawLines(a);
 }
@@ -638,16 +766,19 @@ function drawLines(a) {
   chart.insertAdjacentHTML('beforeend', `<svg class="flylines" aria-hidden="true">${body}</svg>`);
 }
 
-function palDetail(a, marks, yb) {
+function palDetail(a, marks, yb, h, lays) {
   const pal = a.palaces.find(x => x.earthlyBranch === ui.selBr);
   const br = pal.earthlyBranch, st = allStars(pal);
   const s0 = (BR.indexOf(br) - yb + 12) % 12 + 1;
   const withFly = s => starHTML(s) + ((marks[br] || {})[s.name] || []).map(m =>
-    `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('');
+    `<span class="fly ${m.hua}${m.dir === 'in' ? ' in' : ''}">${m.dir === 'in' ? '←' : '→'}${m.hua}</span>`).join('')
+    + (lays || []).map(L => { const i = h[L].mutagen.indexOf(s.name); return i < 0 ? '' : `<span class="lh ${HN[i]}">${LPFX[L]}${HN[i]}</span>`; }).join('');
   const list = k => st.filter(s => s.kind === k).map(withFly).join('、') || '—';
   return `<div class="pdetail">
     <div class="pd-head"><b>${palName(pal.name)}</b>${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}<span>${pal.heavenlyStem}${pal.earthlyBranch}・大限 ${pal.decadal.range.join('–')}</span></div>
     <dl>
+      ${(lays || []).length ? `<dt>運限</dt><dd>${lays.map(L => `<span class="ht ${L}" style="font-size:12px;padding:1px 5px">${LNAME[L]}${palName(h[L].palaceNames[pal.index])}</span>`).join(' ')}
+        ${lays.some(L => (h[L].stars?.[pal.index] || []).length) ? `<div class="hstars" style="font-size:13px;margin-top:2px">${lays.map(L => (h[L].stars[pal.index] || []).map(x => `<span class="${L}">${esc(x.name)}</span>`).join('')).join('')}</div>` : ''}</dd>` : ''}
       <dt>主星</dt><dd class="big">${st.some(s => s.kind === 'major') ? list('major') : '空宮'}</dd>
       <dt>吉星</dt><dd>${list('soft')}</dd>
       <dt>煞星</dt><dd>${list('tough')}</dd>
@@ -678,6 +809,112 @@ function flyInfo(a, pal) {
       <span class="with">（${HN[hi]}追${HN[hi]}：一宮宮干化${HN[hi]}入某宮，再看那宮宮干化${HN[hi]}飛到哪）</span></div>
       <div class="chain">${chain}<div class="end">${esc(end)}</div></div></div>`;
 }
+
+/* ---------- 筆記總覽 ---------- */
+const STAR_ORDER = GROUPS.flatMap(g => g[1]);
+function parseNotes() {
+  return Object.entries(notes).filter(([, v]) => v && v.trim()).map(([key, text]) => {
+    if (key.startsWith('宮:')) { const pal = key.slice(2); return { key, text, star:null, pal, title:`${palName(pal)}（宮位筆記）` }; }
+    const [star, pal] = key.split('@');
+    return { key, text, star, pal, title:`${star}在${palName(pal)}` };
+  });
+}
+function whoHas(star, pal) {
+  return people.filter(p => {
+    const a = chartOf(p); if (!a) return false;
+    const f = findStar(a, star); if (!f) return false;
+    return (f.pal.name === '命宮' ? '命宮' : shortPal(f.pal.name)) === pal;
+  });
+}
+const starRank = n => { const i = STAR_ORDER.indexOf(n); return i < 0 ? 999 : i; };
+function renderNotes() {
+  document.querySelectorAll('[data-ngroup]').forEach(b => b.setAttribute('aria-pressed', b.dataset.ngroup === (ui.ngroup || 'star')));
+  const out = $('#notesOut');
+  const all = parseNotes();
+  if (!all.length) {
+    out.innerHTML = `<div class="empty-state"><h2>還沒有筆記</h2><p>到「對照」頁選一顆星，每個宮位下方都有「寫筆記」，寫下的內容會集中整理在這裡。</p><button class="btn primary" data-go="compare">去對照頁</button></div>`;
+    return;
+  }
+  const q = ($('#noteSearch').value || '').trim();
+  const list = q ? all.filter(n => (n.text + n.title).includes(q)) : all;
+  const hl = t => { const e = esc(t); return q ? e.split(esc(q)).join(`<mark>${esc(q)}</mark>`) : e; };
+  const byStar = (ui.ngroup || 'star') === 'star';
+
+  // 筆記地圖（依星曜時顯示）
+  let map = '';
+  if (byStar && !q) {
+    const stars = [...new Set(all.filter(n => n.star).map(n => n.star))].sort((a, b) => starRank(a) - starRank(b));
+    if (stars.length) {
+      const has = new Set(all.map(n => n.key));
+      map = `<p class="with" style="margin:0 0 4px;font-size:13px">筆記地圖：紫色圓點代表寫過筆記，點一下跳到那一則。</p><div class="nmap-wrap"><table class="nmap"><thead><tr><th></th>${PALACES.map(p => `<th>${shortPal(p) === '命' ? '命' : shortPal(p === '僕役' ? '交友' : p)}</th>`).join('')}</tr></thead><tbody>
+        ${stars.map(st => `<tr><th class="rh">${esc(st)}</th>${PALACES.map(p => `<td>${has.has(`${st}@${p}`) ? `<button class="dot" data-jump="${esc(`${st}@${p}`)}" title="${esc(st)}在${palName(p)}" aria-label="${esc(st)}在${palName(p)}的筆記"></button>` : '<span class="nil"></span>'}</td>`).join('')}</tr>`).join('')}
+        </tbody></table></div>`;
+    }
+  }
+
+  const groups = new Map();
+  list.forEach(n => {
+    const g = byStar ? (n.star || '宮位筆記') : n.pal;
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(n);
+  });
+  const gKeys = [...groups.keys()].sort((a, b) => byStar
+    ? (a === '宮位筆記' ? 1 : b === '宮位筆記' ? -1 : starRank(a) - starRank(b) || a.localeCompare(b))
+    : PALACES.indexOf(a) - PALACES.indexOf(b));
+  const html = gKeys.map(g => {
+    const items = groups.get(g).sort((a, b) => byStar ? PALACES.indexOf(a.pal) - PALACES.indexOf(b.pal) : (a.star ? starRank(a.star) : -1) - (b.star ? starRank(b.star) : -1));
+    return `<div class="ngroup"><h3>${byStar ? esc(g) : palName(g)}<small>${items.length} 則</small></h3>
+      ${items.map(n => {
+        const ppl = n.star ? whoHas(n.star, n.pal) : [];
+        return `<div class="ncard" id="n-${encodeURIComponent(n.key)}"><div class="nh"><b>${hl(n.title)}</b>
+          ${n.star ? `<button class="go" data-gostar="${esc(n.star)}">看所有朋友的${esc(n.star)}</button>` : `<button class="go" data-gopal="${esc(n.pal)}">看所有朋友的${palName(n.pal)}</button>`}</div>
+          ${q ? `<div style="white-space:pre-wrap">${hl(n.text)}</div>` : `<textarea data-note="${esc(n.key)}">${esc(n.text)}</textarea>`}
+          ${n.star ? `<div class="ppl">${ppl.length ? '目前符合的朋友：' + ppl.map(p => `<span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span>`).join('、') : '目前沒有朋友是這個組合'}</div>` : ''}</div>`;
+      }).join('')}</div>`;
+  }).join('');
+  out.innerHTML = `<p class="with" style="margin:0 0 12px">共 ${all.length} 則筆記${q ? `，符合「${esc(q)}」的有 ${list.length} 則` : ''}。${!q ? '直接在這裡修改也會自動儲存。' : ''}</p>` + map + (html || '<p class="with">沒有符合的筆記。</p>');
+}
+function notesMarkdown() {
+  const all = parseNotes();
+  const byStar = new Map();
+  all.forEach(n => { const g = n.star || '宮位筆記'; if (!byStar.has(g)) byStar.set(g, []); byStar.get(g).push(n); });
+  const keys = [...byStar.keys()].sort((a, b) => (a === '宮位筆記') - (b === '宮位筆記') || starRank(a) - starRank(b));
+  let md = `# 紫微斗數學習筆記
+
+匯出日期：${new Date().toISOString().slice(0, 10)}，共 ${all.length} 則
+`;
+  keys.forEach(g => {
+    md += `
+## ${g}
+`;
+    byStar.get(g).sort((a, b) => PALACES.indexOf(a.pal) - PALACES.indexOf(b.pal)).forEach(n => {
+      md += `
+### ${n.title}
+
+${n.text}
+`;
+      if (n.star) { const ppl = whoHas(n.star, n.pal); if (ppl.length) md += `
+> 符合的朋友：${ppl.map(p => p.name).join('、')}
+`; }
+    });
+  });
+  return md;
+}
+$('#noteSearch').addEventListener('input', () => renderNotes());
+document.querySelector('#v-notes .seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ui.ngroup = b.dataset.ngroup; saveUI(); renderNotes(); } });
+$('#noteMdBtn').addEventListener('click', () => {
+  if (!parseNotes().length) { toast('還沒有筆記可以下載'); return; }
+  const blob = new Blob([notesMarkdown()], { type:'text/markdown;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `紫微筆記-${new Date().toISOString().slice(0, 10)}.md`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#notesOut').addEventListener('click', e => {
+  const j = e.target.closest('[data-jump]'), gs = e.target.closest('[data-gostar]'), gp = e.target.closest('[data-gopal]');
+  if (j) { const el = document.getElementById('n-' + encodeURIComponent(j.dataset.jump)); if (el) { el.scrollIntoView({ behavior:'smooth', block:'start' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }
+  if (gs) { ui.star = gs.dataset.gostar; ui.mode = 'star'; go('compare'); }
+  if (gp) { ui.palace = gp.dataset.gopal; ui.mode = 'palace'; go('compare'); }
+});
 
 /* ---------- 朋友 ---------- */
 function renderPeople() {
@@ -815,6 +1052,7 @@ function refresh() {
   if (ui.view === 'compare') { fillSelectors(); renderCompare(); }
   if (ui.view === 'chart') renderChart();
   if (ui.view === 'people') renderPeople();
+  if (ui.view === 'notes') renderNotes();
 }
 document.querySelector('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.view); });
 document.querySelector('.seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ui.mode = b.dataset.mode; saveUI(); renderCompare(); } });
@@ -824,6 +1062,14 @@ $('#personSel').addEventListener('change', e => { ui.person = e.target.value; sa
 $('#detailSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.detail = b.dataset.detail; saveUI(); renderChart(); });
 
 document.querySelector('main').addEventListener('click', e => {
+  const hon = e.target.closest('[data-hor-on]'), lyr = e.target.closest('[data-layer]'), ht = e.target.closest('[data-hor-today]');
+  const dc = e.target.closest('[data-dec]'), yr = e.target.closest('[data-year]'), mo = e.target.closest('[data-month]');
+  if (hon) { ui.horOn = hon.checked; saveUI(); renderChart(); return; }
+  if (lyr) { ui.layers = Object.assign({ decadal:true, yearly:true, monthly:false }, ui.layers, { [lyr.dataset.layer]: lyr.checked }); saveUI(); renderChart(); return; }
+  if (ht) { ui.horY = null; ui.horM = null; saveUI(); renderChart(); return; }
+  if (dc) { const p = people.find(x => x.id === ui.person); const a = chartOf(p); ui.horY = a.rawDates.lunarDate.lunarYear + (+dc.dataset.dec) - 1; saveUI(); renderChart(); return; }
+  if (yr) { ui.horY = +yr.dataset.year; saveUI(); renderChart(); return; }
+  if (mo) { ui.horM = +mo.dataset.month; if (!ui.horY) ui.horY = getTodayLunar().y; saveUI(); renderChart(); return; }
   const lb = e.target.closest('[data-line]'), sc = e.target.closest('[data-scope]'), chb = e.target.closest('[data-chain]'), cn = e.target.closest('[data-chain-br]');
   if (lb) { const h = lb.dataset.line; ui.lines = (ui.lines || []).includes(h) ? ui.lines.filter(x => x !== h) : [...(ui.lines || []), h]; saveUI(); renderChart(); return; }
   if (sc) { ui.scope = sc.dataset.scope; saveUI(); renderChart(); return; }
