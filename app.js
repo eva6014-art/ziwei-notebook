@@ -262,7 +262,8 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 function noteBlock(key, label) {
   const v = notes[key] || '';
   return `<details class="note"${v ? '' : ''}><summary class="${v ? 'has' : ''}">${v ? '我的筆記：' + esc(v.slice(0, 30)) + (v.length > 30 ? '…' : '') : label}</summary>
-    <textarea data-note="${esc(key)}" placeholder="寫下你觀察到的共通點、書上的解釋…">${esc(v)}</textarea></details>`;
+    <textarea data-note="${esc(key)}" placeholder="寫下你觀察到的共通點、書上的解釋…">${esc(v)}</textarea>
+    <div class="note-tools"><button type="button" class="note-expand" data-expand="${esc(key)}" data-title="${esc(label.replace(/^寫筆記：/, ''))}">⤢ 放大編輯</button></div></details>`;
 }
 
 /* ---------- 對照 ---------- */
@@ -637,9 +638,10 @@ function renderNotes() {
           : n.star ? `<button class="go" data-gostar="${esc(n.star)}" data-golayer="${n.layer || 'natal'}">看所有朋友的${n.layer ? LNAME[n.layer] : ''}${esc(n.star)}</button>`
           : `<button class="go" data-gopal="${esc(n.pal)}" data-golayer="${n.layer || 'natal'}">看所有朋友的${n.layer ? LNAME[n.layer] : ''}${palName(n.pal)}</button>`;
         return `<div class="ncard" id="n-${encodeURIComponent(n.key)}"><div class="nh"><b>${hl(n.title)}</b>${go}</div>
-          ${q ? `<div style="white-space:pre-wrap">${hl(n.text)}</div>` : `<textarea data-note="${esc(n.key)}">${esc(n.text)}</textarea>`}
+          ${q ? `<div style="white-space:pre-wrap">${hl(n.text)}</div>` : `<textarea data-note="${esc(n.key)}">${esc(n.text)}</textarea><div class="note-tools"><button type="button" class="note-expand" data-expand="${esc(n.key)}" data-title="${esc(n.title)}">⤢ 放大編輯</button></div>`}
           ${n.star && !n.layer ? `<div class="ppl">${ppl.length ? '目前符合的朋友：' + ppl.map(p => `<span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span>`).join('、') : '目前沒有朋友是這個組合'}</div>` : ''}</div>`;
       }).join('')}</div>`).join('');
+  setTimeout(growAll, 0);
   out.innerHTML = `<p class="with" style="margin:0 0 12px">共 ${all.length} 則筆記${q ? `，符合「${esc(q)}」的有 ${list.length} 則` : ''}。${!q ? '直接在這裡修改也會自動儲存。' : ''}</p>` + map + (html || '<p class="with">沒有符合的筆記。</p>');
 }
 function notesMarkdown() {
@@ -899,12 +901,45 @@ document.querySelector('main').addEventListener('submit', e => {
   const c = $('#evCat'); if (c) c.value = cat;
 });
 let nt;
+/* ---------- 筆記編輯：自動長高、放大編輯 ---------- */
+function autoGrow(t) {
+  if (!t || !t.offsetParent) return;
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight + 4, Math.max(260, window.innerHeight * 0.6)) + 'px';
+}
+function setNote(key, value) {
+  const v = value.trim();
+  if (v) notes[key] = v; else delete notes[key];
+  clearTimeout(nt); nt = setTimeout(() => save(KEY_N, notes), 400);
+  // 同步頁面上其他相同筆記的欄位與摘要
+  document.querySelectorAll('textarea[data-note]').forEach(t => { if (t.dataset.note === key && t.value !== value) { t.value = value; autoGrow(t); } });
+  document.querySelectorAll('details.note').forEach(d => {
+    const t = d.querySelector('textarea[data-note]'); if (!t || t.dataset.note !== key) return;
+    const sm = d.querySelector('summary');
+    if (v) { sm.classList.add('has'); sm.textContent = '我的筆記：' + v.slice(0, 30) + (v.length > 30 ? '…' : ''); }
+  });
+}
 document.querySelector('main').addEventListener('input', e => {
   const t = e.target.closest('textarea[data-note]'); if (!t) return;
-  const v = t.value.trim();
-  if (v) notes[t.dataset.note] = v; else delete notes[t.dataset.note];
-  clearTimeout(nt); nt = setTimeout(() => save(KEY_N, notes), 400);
+  autoGrow(t);
+  setNote(t.dataset.note, t.value);
 });
+document.querySelector('main').addEventListener('toggle', e => {
+  if (e.target.matches && e.target.matches('details.note') && e.target.open) autoGrow(e.target.querySelector('textarea'));
+}, true);
+const dlg = $('#noteDlg'), dlgText = $('#noteDlgText');
+document.querySelector('main').addEventListener('click', e => {
+  const b = e.target.closest('[data-expand]'); if (!b) return;
+  dlg.dataset.key = b.dataset.expand;
+  $('#noteDlgTitle').textContent = b.dataset.title || '筆記';
+  dlgText.value = notes[b.dataset.expand] || '';
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  dlgText.focus();
+});
+dlgText.addEventListener('input', () => setNote(dlg.dataset.key, dlgText.value));
+$('#noteDlgClose').addEventListener('click', () => { save(KEY_N, notes); dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
+dlg.addEventListener('close', () => save(KEY_N, notes));
+const growAll = () => document.querySelectorAll('textarea[data-note]').forEach(autoGrow);
 
 syncTimeUI();
 /* ---------- 備份提醒 ---------- */
