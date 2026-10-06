@@ -495,7 +495,31 @@ function renderChart() {
   out.insertAdjacentHTML('beforeend', eventsPanel(p, a));
   if (ui.lastEvCat && $('#evCat')) $('#evCat').value = ui.lastEvCat;
   document.querySelectorAll('.hrow').forEach(row => { const c = row.querySelector('[aria-pressed="true"]'); if (c) row.scrollLeft = c.offsetLeft - row.clientWidth / 2 + c.offsetWidth / 2; });
+  drawSF();
   drawLines(a);
+}
+
+// 三方四正虛線：像文墨天機一樣，從各宮靠近中宮的那一點連線
+const SF_ANCHOR = { 巳:['r','b'], 午:['m','b'], 未:['m','b'], 申:['l','b'], 辰:['r','m'], 酉:['l','m'], 卯:['r','m'], 戌:['l','m'], 寅:['r','t'], 丑:['m','t'], 子:['m','t'], 亥:['l','t'] };
+function drawSF() {
+  const chart = document.querySelector('#chartOut .chart'); if (!chart) return;
+  chart.querySelector('svg.sflines')?.remove();
+  if (ui.sf === false || !ui.selBr) return;
+  const cr = chart.getBoundingClientRect();
+  const pt = br => {
+    const el = chart.querySelector(`.cell[data-br="${br}"]`); if (!el) return null;
+    const r = el.getBoundingClientRect(), [hx, vy] = SF_ANCHOR[br];
+    const x = hx === 'l' ? r.left : hx === 'r' ? r.right : r.left + r.width / 2;
+    const y = vy === 't' ? r.top : vy === 'b' ? r.bottom : r.top + r.height / 2;
+    return [x - cr.left, y - cr.top];
+  };
+  const i = BR.indexOf(ui.selBr);
+  const me = pt(ui.selBr), opp = pt(BR[(i + 6) % 12]), t1 = pt(BR[(i + 4) % 12]), t2 = pt(BR[(i + 8) % 12]);
+  if (!me || !opp || !t1 || !t2) return;
+  const P = p => p.map(n => n.toFixed(1)).join(',');
+  chart.insertAdjacentHTML('beforeend', `<svg class="sflines" aria-hidden="true">
+    <polygon points="${P(me)} ${P(t1)} ${P(t2)}" />
+    <line x1="${me[0]}" y1="${me[1]}" x2="${opp[0]}" y2="${opp[1]}" /></svg>`);
 }
 
 function drawLines(a) {
@@ -988,7 +1012,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
 let rz;
-const redraw = () => { if (ui.view === 'chart') { const p = people.find(x => x.id === ui.person); const a = p && chartOf(p); if (a) drawLines(a); } };
+const redraw = () => { if (ui.view === 'chart') { const p = people.find(x => x.id === ui.person); const a = p && chartOf(p); if (a) { drawSF(); drawLines(a); } } };
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 150); });
 document.fonts?.ready.then(redraw);
 applySettings();
