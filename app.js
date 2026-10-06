@@ -113,9 +113,12 @@ function flyMarks(a) {
 }
 const godName = n => n === '官府' ? '官符' : n;
 /* ---------- 運限（大限・流年・流月） ---------- */
-const LAYERS = ['decadal','yearly','monthly'];
-const LNAME = { decadal:'大限', yearly:'流年', monthly:'流月' };
-const LPFX = { decadal:'大', yearly:'年', monthly:'月' };
+const LAYERS = ['decadal','age','yearly','monthly','daily','hourly'];
+const LNAME = { decadal:'大限', age:'小限', yearly:'流年', monthly:'流月', daily:'流日', hourly:'流時' };
+const LPFX = { decadal:'大', age:'小', yearly:'年', monthly:'月', daily:'日', hourly:'時' };
+const DEFAULT_LAYERS = { decadal:true, age:false, yearly:true, monthly:false, daily:false, hourly:false };
+const DAYS = ['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+const HOURS = ['早子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥','晚子'];
 const ABBR = { 命宮:'命', 兄弟:'兄', 夫妻:'夫', 子女:'子', 財帛:'財', 疾厄:'疾', 遷移:'遷', 僕役:'友', 交友:'友', 官祿:'官', 田宅:'田', 福德:'福', 父母:'父' };
 const MONTHS = ['正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','臘月'];
 const yearGZ = y => '甲乙丙丁戊己庚辛壬癸'[((y - 4) % 10 + 10) % 10] + BR[((y - 4) % 12 + 12) % 12];
@@ -124,17 +127,20 @@ function getTodayLunar() {
   if (todayLunar) return todayLunar;
   const d = new Date();
   const r = astro.bySolar(`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`, 6, '女', true, 'zh-TW').rawDates.lunarDate;
-  return (todayLunar = { y: r.lunarYear, m: r.lunarMonth });
+  return (todayLunar = { y: r.lunarYear, m: r.lunarMonth, d: r.lunarDay, t: hourToIndex(d.getHours()) });
 }
 function horOf(a) {
   if (!ui.horOn) return null;
   const t = getTodayLunar();
   const by = a.rawDates.lunarDate.lunarYear;
   const y = Math.max(ui.horY || t.y, by), m = ui.horM || t.m;
+  let d = ui.horD || t.d; const ti = ui.horT ?? t.t;
+  let sd = null;
+  while (d >= 1 && !sd) { try { sd = astro.byLunar(`${y}-${m}-${d}`, ti, '女', false, true, 'zh-TW').solarDate; } catch { d--; } }
+  if (!sd) return null;
   try {
-    const sd = astro.byLunar(`${y}-${m}-15`, 6, '女', false, true, 'zh-TW').solarDate;
-    const h = a.horoscope(sd, 6);
-    h._y = y; h._m = m;
+    const h = a.horoscope(sd, ti);
+    h._y = y; h._m = m; h._d = d; h._t = ti;
     return h;
   } catch (e) { console.error(e); return null; }
 }
@@ -173,17 +179,17 @@ function eventsPanel(p, a) {
     </form>
     ${rows || '<p class="with">還沒有事件。</p>'}</section>`;
 }
-const activeLayers = () => LAYERS.filter(L => (ui.layers || { decadal:true, yearly:true, monthly:false })[L]);
+const activeLayers = () => LAYERS.filter(L => Object.assign({}, DEFAULT_LAYERS, ui.layers)[L]);
 function horBar(a, h) {
   const t = getTodayLunar();
   const by = a.rawDates.lunarDate.lunarYear;
   const on = !!ui.horOn;
-  const lay = ui.layers || { decadal:true, yearly:true, monthly:false };
+  const lay = Object.assign({}, DEFAULT_LAYERS, ui.layers);
   let html = `<div class="horbox"><div class="top">
     <label class="lyr"><input type="checkbox" data-hor-on ${on ? 'checked' : ''}> <b>顯示運限</b></label>`;
-  if (!on) return html + `<span class="with">打開後可以選大限、流年、流月，盤上會疊出運限宮位與四化。</span></div></div>`;
+  if (!on) return html + `<span class="with">打開後可以選大限、小限、流年、流月、流日、流時，盤上會疊出運限宮位與四化。</span></div></div>`;
   html += LAYERS.map(L => `<label class="lyr ${L}"><input type="checkbox" data-layer="${L}" ${lay[L] ? 'checked' : ''}> <i>${LNAME[L]}</i></label>`).join('')
-    + `<button class="btn" data-hor-today style="padding:3px 10px">回到今年本月</button></div>`;
+    + `<button class="btn" data-hor-today style="padding:3px 10px">回到現在</button></div>`;
   const age = h._y - by + 1;
   const decs = [...a.palaces].sort((p, q) => p.decadal.range[0] - q.decadal.range[0]);
   const curDec = decs.find(p => age >= p.decadal.range[0] && age <= p.decadal.range[1]) || decs[0];
@@ -191,11 +197,13 @@ function horBar(a, h) {
   const years = []; for (let g = curDec.decadal.range[0]; g <= curDec.decadal.range[1]; g++) years.push(by + g - 1);
   html += `<div class="hrow yearly"><span class="rl">流年</span>${years.map(y => `<button class="chip" data-year="${y}" aria-pressed="${y === h._y}">${y}<small>${yearGZ(y)} ${y - by + 1}歲</small></button>`).join('')}</div>`;
   html += `<div class="hrow monthly"><span class="rl">流月</span>${MONTHS.map((n, i) => `<button class="chip" data-month="${i + 1}" aria-pressed="${i + 1 === h._m}">${n}</button>`).join('')}</div>`;
+  if (lay.daily || lay.hourly) html += `<div class="hrow daily"><span class="rl">流日</span>${DAYS.map((n, i) => `<button class="chip" data-day="${i + 1}" aria-pressed="${i + 1 === h._d}">${n}</button>`).join('')}</div>`;
+  if (lay.hourly) html += `<div class="hrow hourly"><span class="rl">流時</span>${HOURS.map((n, i) => `<button class="chip" data-hour="${i}" aria-pressed="${i === h._t}">${n}</button>`).join('')}</div>`;
   html += `<div class="hsum">${activeLayers().map(L => {
     const x = h[L], idx = x.index;
     const natal = a.palaces.find(p => p.index === idx);
-    return `<div class="${L}"><span class="k">${LNAME[L]} ${x.heavenlyStem}${x.earthlyBranch}</span>命宮在${palName(natal.name)}（本命）　${x.mutagen.map((n, i) => `${n}<span class="hua ${HN[i]}">${HN[i]}</span>`).join(' ')}</div>`;
-  }).join('')}<div class="with" style="font-size:12px">流年、流月以農曆計；${t.y === h._y && t.m === h._m ? '目前顯示的是今年本月。' : ''}</div></div>`;
+    return `<div class="${L}"><span class="k">${LNAME[L]} ${L === 'age' ? x.nominalAge + '歲' : x.heavenlyStem + x.earthlyBranch}</span>命宮在${palName(natal.name)}（本命）　${x.mutagen.map((n, i) => `${n}<span class="hua ${HN[i]}">${HN[i]}</span>`).join(' ')}</div>`;
+  }).join('')}<div class="with" style="font-size:12px">流年、流月、流日以農曆計；${t.y === h._y && t.m === h._m ? '目前顯示的是今年本月。' : ''}</div></div>`;
   return html + '</div>';
 }
 const palOfStar = (a, star) => a.palaces.find(p => allStars(p).some(s => s.name === star));
@@ -436,10 +444,19 @@ function renderChart() {
   const p = people.find(x => x.id === ui.person);
   const a = chartOf(p);
   if (!a) { out.innerHTML = '<p class="err">這組生日排不出盤，請到「朋友」檢查日期是否正確。</p>'; return; }
+  // 合盤對象
+  const ps = $('#partnerSel');
+  ps.innerHTML = '<option value="">不合盤</option>' + people.filter(x => x.id !== p.id).map(x => `<option value="${esc(x.id)}"${x.id === ui.partner ? ' selected' : ''}>合盤：${esc(x.name)}</option>`).join('');
+  const pp = ui.partner && ui.partner !== p.id ? people.find(x => x.id === ui.partner) : null;
+  const b = pp ? chartOf(pp) : null;
+  $('#swapBtn').hidden = !b;
+  const bHua = b ? natalHua(b) : [];
+  const bAt = br => b && b.palaces.find(x => x.earthlyBranch === br);
   const marks = flyMarks(a);
   const h = horOf(a);
   const lays = h ? activeLayers() : [];
-  const lhua = name => lays.map(L => { const i = h[L].mutagen.indexOf(name); return i < 0 ? '' : `<span class="lh ${HN[i]}" title="${LNAME[L]}化${HN[i]}">${LPFX[L]}${HN[i]}</span>`; }).join('');
+  const lhua = name => lays.map(L => { const i = h[L].mutagen.indexOf(name); return i < 0 ? '' : `<span class="lh ${HN[i]}" title="${LNAME[L]}化${HN[i]}">${LPFX[L]}${HN[i]}</span>`; }).join('')
+    + (b ? (i => i < 0 ? '' : `<span class="lh ${HN[i]} pl" title="${esc(pp.name)}的生年化${HN[i]}">他${HN[i]}</span>`)(bHua.indexOf(name)) : '');
   const yb = BR.indexOf(a.rawDates.chineseDate.yearly[1]);
   if (!a.palaces.some(x => x.earthlyBranch === ui.selBr)) ui.selBr = a.palaces.find(x => x.name === '命宮').earthlyBranch;
   const star2 = (s, br) => '<span class="sw">' + starHTML(s) + ((marks[br] || {})[s.name] || []).map(m =>
@@ -455,13 +472,16 @@ function renderChart() {
     const rel = (BR.indexOf(br) - BR.indexOf(ui.selBr) + 12) % 12;
     const sf = ui.sf === false ? '' : rel === 6 ? ' sf sf-opp' : (rel === 4 || rel === 8) ? ' sf sf-tri' : '';
     const sel = sf + (br === ui.selBr ? ' sel' : '') + lays.filter(L => h[L].index === pal.index).slice(-1).map(L => ' lming-' + L).join('');
-    const htags = lays.map(L => `<span class="ht ${L}" title="${LNAME[L]}${h[L].palaceNames[pal.index]}">${LPFX[L]}${ABBR[h[L].palaceNames[pal.index]] || h[L].palaceNames[pal.index]}</span>`).join('');
-    const hst = lays.map(L => (h[L].stars?.[pal.index] || []).map(x => `<span class="${L}">${esc(x.name)}</span>`).join('')).join('');
+    const bp = bAt(br);
+    const ptag = bp ? `<span class="ht partner" title="${esc(pp.name)}的${palName(bp.name)}">他${ABBR[bp.name] || bp.name}</span>` : '';
+    const pstars = bp ? `<div class="pstars">他：${bp.majorStars.map(x => esc(x.name)).join(' ') || '空宮'}</div>` : '';
+    const htags = ptag + lays.map(L => `<span class="ht ${L}" title="${LNAME[L]}${h[L].palaceNames[pal.index]}">${LPFX[L]}${ABBR[h[L].palaceNames[pal.index]] || h[L].palaceNames[pal.index]}</span>`).join('');
+    const hst = pstars + lays.map(L => (h[L].stars?.[pal.index] || []).map(x => `<span class="${L}">${esc(x.name)}</span>`).join('')).join('');
     return `<div class="cell${hl}${sel}" data-br="${br}" style="grid-row:${r};grid-column:${c}">${sf ? `<span class="sflabel">${rel === 6 ? '對宮' : '三合'}</span>` : ''}
       <div class="majors">${st.filter(s => s.kind === 'major').map(s => star2(s, br)).join('')}</div>
       <div class="minors">${st.filter(s => s.kind === 'soft' || s.kind === 'tough').map(s => star2(s, br)).join('')}</div>
       <div class="adjs">${st.filter(s => s.kind === 'adj').map(s => starHTML(s)).join('')}</div>
-      ${hst ? `<div class="hstars">${hst}</div>` : ''}
+      ${hst.replace(pstars, '') ? `<div class="hstars">${hst.replace(pstars, '')}</div>` : ''}${pstars}
       <div class="ages">流年 ${flow}<br>小限 ${pal.ages.slice(0, 5).join(', ')}</div>
       ${htags ? `<div class="htags">${htags}</div>` : ''}
       <div class="foot3">
@@ -490,8 +510,9 @@ function renderChart() {
       <dt>五行局</dt><dd>${esc(a.fiveElementsClass)}</dd>
       <dt>命主／身主</dt><dd>${esc(a.soul)}／${esc(a.body)}</dd>
       ${p.note ? `<dt>備註</dt><dd>${esc(p.note)}</dd>` : ''}</dl></div></div></div>
-    ${palDetail(a, marks, yb, h, lays)}
+    ${palDetail(a, marks, yb, h, lays, b, pp)}
     <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。實心標籤是生年四化；<span class="fly 祿">→祿</span> 是本宮宮干自化（離心），<span class="fly 祿 in">←祿</span> 是對宮宮干化入（向心）。宮位左下三行依序為博士、將前、歲前十二神，右下小字為長生十二神。飛化連線：從宮干所在的宮，畫到被化的星所在的宮（自化不畫線）。</p>`;
+  if (b) out.insertAdjacentHTML('beforeend', pairPanel(a, b, p, pp));
   out.insertAdjacentHTML('beforeend', eventsPanel(p, a));
   if (ui.lastEvCat && $('#evCat')) $('#evCat').value = ui.lastEvCat;
   document.querySelectorAll('.hrow').forEach(row => { const c = row.querySelector('[aria-pressed="true"]'); if (c) row.scrollLeft = c.offsetLeft - row.clientWidth / 2 + c.offsetWidth / 2; });
@@ -547,7 +568,38 @@ function drawLines(a) {
   chart.insertAdjacentHTML('beforeend', `<svg class="flylines" aria-hidden="true">${body}</svg>`);
 }
 
-function palDetail(a, marks, yb, h, lays) {
+// 本命生年四化的四顆星（依祿權科忌）
+function natalHua(a) {
+  const r = ['', '', '', ''];
+  a.palaces.forEach(p => [...p.majorStars, ...p.minorStars].forEach(s => { const i = HN.indexOf(s.mutagen); if (i >= 0) r[i] = s.name; }));
+  return r;
+}
+function pairPanel(a, b, pa, pb) {
+  const A = esc(pa.name), B = esc(pb.name);
+  const order = [...a.palaces].sort((x, y) => PALACES.indexOf(normPal(x.name)) - PALACES.indexOf(normPal(y.name)));
+  const majors = p => p.majorStars.map(s => starHTML(s)).join('、') || '<span class="with">空宮</span>';
+  const rows = order.map(ap => {
+    const bp = b.palaces.find(x => x.earthlyBranch === ap.earthlyBranch);
+    const key = ['命宮','夫妻'].includes(normPal(ap.name)) || ['命宮','夫妻'].includes(normPal(bp.name));
+    return `<tr${key ? ' class="pkey"' : ''}><td data-l="地支">${ap.earthlyBranch}</td>
+      <td data-l="${A}"><b>${palName(ap.name)}</b> ${majors(ap)}</td>
+      <td data-l="${B}"><b class="pl-name">${palName(bp.name)}</b> ${majors(bp)}</td></tr>`;
+  }).join('');
+  const cross = (src, dst, S, D) => natalHua(src).map((star, i) => {
+    if (!star) return '';
+    const sp = palOfStar(src, star), dp = palOfStar(dst, star);
+    return `<li><span class="hua ${HN[i]}">${HN[i]}</span> ${S}的生年化${HN[i]}是<b>${star}</b>（在${S}的${palName(sp.name)}）→ 落在${D}的<b>${palName(dp.name)}</b></li>`;
+  }).join('');
+  return `<section class="pair"><div class="pair-h"><h3>合盤：${A} × <span class="pl-name">${B}</span></h3><button class="btn" data-swap>對調兩人</button></div>
+    <p class="with" style="margin:0 0 10px;font-size:13px">兩張盤的十二地支位置相同，所以同一格就是「我的某宮對到他的某宮」。盤上橘色「他夫、他命」標籤是 ${B} 的宮位，「他祿、他忌」是 ${B} 的生年四化落在你盤上的星。點任一宮可在下方詳情看到兩人該宮的星曜與宮干互飛。</p>
+    <h4>生年四化互入</h4>
+    <ul class="cross">${cross(a, b, A, B)}</ul>
+    <ul class="cross">${cross(b, a, B, A)}</ul>
+    <h4>宮位對照</h4>
+    <div class="tbl-wrap"><table class="ptable"><thead><tr><th>地支</th><th>${A}</th><th>${B}</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </section>`;
+}
+function palDetail(a, marks, yb, h, lays, b, pp) {
   const pal = a.palaces.find(x => x.earthlyBranch === ui.selBr);
   const br = pal.earthlyBranch, st = allStars(pal);
   const s0 = (BR.indexOf(br) - yb + 12) % 12 + 1;
@@ -559,7 +611,15 @@ function palDetail(a, marks, yb, h, lays) {
     <div class="pd-head"><b>${palName(pal.name)}</b>${pal.isBodyPalace ? '<span class="tag">身</span>' : ''}<span>${pal.heavenlyStem}${pal.earthlyBranch}・大限 ${pal.decadal.range.join('–')}</span></div>
     <dl>
       ${(lays || []).length ? `<dt>運限</dt><dd>${lays.map(L => `<span class="ht ${L}" style="font-size:12px;padding:1px 5px">${LNAME[L]}${palName(h[L].palaceNames[pal.index])}</span>`).join(' ')}
-        ${lays.some(L => (h[L].stars?.[pal.index] || []).length) ? `<div class="hstars" style="font-size:13px;margin-top:2px">${lays.map(L => (h[L].stars[pal.index] || []).map(x => `<span class="${L}">${esc(x.name)}</span>`).join('')).join('')}</div>` : ''}</dd>` : ''}
+        ${lays.some(L => (h[L].stars?.[pal.index] || []).length) ? `<div class="hstars" style="font-size:13px;margin-top:2px">${lays.map(L => (h[L].stars?.[pal.index] || []).map(x => `<span class="${L}">${esc(x.name)}</span>`).join('')).join('')}</div>` : ''}</dd>` : ''}
+      ${b ? (() => {
+        const bp = b.palaces.find(x => x.earthlyBranch === br);
+        const bl = k => allStars(bp).filter(s => s.kind === k).map(s => starHTML(s)).join('、');
+        const flyTo = (src, dst, who) => SIHUA[src.heavenlyStem].map((star, i) => { const t = palOfStar(dst, star); return `<span><span class="hua ${HN[i]}">${HN[i]}</span> ${star} → ${who}${palName(t.name)}</span>`; }).join('');
+        return `<dt class="pl-t">合盤</dt><dd><b class="pl-name">${esc(pp.name)}的${palName(bp.name)}</b>（${bp.heavenlyStem}${bp.earthlyBranch}）
+          <div>${bl('major') || '空宮'}${bl('soft') ? '、' + bl('soft') : ''}${bl('tough') ? '、' + bl('tough') : ''}</div></dd>
+          <dt class="pl-t">飛入對方</dt><dd><div class="flist">我的${pal.heavenlyStem}干：${flyTo(pal, b, '他的')}</div><div class="flist">他的${bp.heavenlyStem}干：${flyTo(bp, a, '我的')}</div></dd>`;
+      })() : ''}
       <dt>三方四正</dt><dd>${(() => { const at = d => a.palaces.find(x => x.earthlyBranch === BR[(BR.indexOf(br) + d) % 12]); return `對宮 ${palName(at(6).name)}・三合 ${palName(at(4).name)}、${palName(at(8).name)}`; })()}</dd>
       <dt>主星</dt><dd class="big">${st.some(s => s.kind === 'major') ? list('major') : '空宮'}</dd>
       <dt>吉星</dt><dd>${list('soft')}</dd>
@@ -862,9 +922,13 @@ $('#evCatSel').addEventListener('change', e => { ui.evCat = e.target.value; save
 $('#layerSel').addEventListener('change', e => { ui.cLayer = e.target.value; saveUI(); renderCompare(); });
 $('#cYear').addEventListener('change', e => { const v = +e.target.value; if (v >= 1900 && v <= 2100) { ui.cYear = v; saveUI(); renderCompare(); } });
 $('#personSel').addEventListener('change', e => { ui.person = e.target.value; saveUI(); renderChart(); });
+$('#partnerSel').addEventListener('change', e => { ui.partner = e.target.value || null; saveUI(); renderChart(); });
+function swapPair() { if (!ui.partner) return; const t = ui.person; ui.person = ui.partner; ui.partner = t; saveUI(); renderChart(); }
+$('#swapBtn').addEventListener('click', swapPair);
 $('#detailSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.detail = b.dataset.detail; saveUI(); renderChart(); });
 
 document.querySelector('main').addEventListener('click', e => {
+  if (e.target.closest('[data-swap]')) { swapPair(); return; }
   const evv = e.target.closest('[data-ev-view]'), evd = e.target.closest('[data-ev-del]'), sfc = e.target.closest('[data-sf]');
   if (sfc) { ui.sf = sfc.checked; saveUI(); renderChart(); return; }
   if (evd) {
@@ -877,7 +941,7 @@ document.querySelector('main').addEventListener('click', e => {
     const a = chartOf(people.find(x => x.id === ui.person)); const info = ev && eventInfo(a, ev);
     if (info) {
       ui.horOn = true; ui.horY = info.lun.lunarYear; if (ev.m) ui.horM = info.lun.lunarMonth;
-      ui.layers = { decadal:true, yearly:true, monthly:!!ev.m };
+      ui.layers = Object.assign({}, DEFAULT_LAYERS, { monthly:!!ev.m });
       ui.selBr = info.yr.earthlyBranch; saveUI(); renderChart();
       document.querySelector('.horbox')?.scrollIntoView({ behavior:'smooth', block:'start' });
     }
@@ -885,9 +949,12 @@ document.querySelector('main').addEventListener('click', e => {
   }
   const hon = e.target.closest('[data-hor-on]'), lyr = e.target.closest('[data-layer]'), ht = e.target.closest('[data-hor-today]');
   const dc = e.target.closest('[data-dec]'), yr = e.target.closest('[data-year]'), mo = e.target.closest('[data-month]');
+  const dy = e.target.closest('[data-day]'), hr = e.target.closest('[data-hour]');
+  if (dy) { ui.horD = +dy.dataset.day; saveUI(); renderChart(); return; }
+  if (hr) { ui.horT = +hr.dataset.hour; saveUI(); renderChart(); return; }
   if (hon) { ui.horOn = hon.checked; saveUI(); renderChart(); return; }
-  if (lyr) { ui.layers = Object.assign({ decadal:true, yearly:true, monthly:false }, ui.layers, { [lyr.dataset.layer]: lyr.checked }); saveUI(); renderChart(); return; }
-  if (ht) { ui.horY = null; ui.horM = null; saveUI(); renderChart(); return; }
+  if (lyr) { ui.layers = Object.assign({}, DEFAULT_LAYERS, ui.layers, { [lyr.dataset.layer]: lyr.checked }); saveUI(); renderChart(); return; }
+  if (ht) { ui.horY = null; ui.horM = null; ui.horD = null; ui.horT = null; todayLunar = null; saveUI(); renderChart(); return; }
   if (dc) { const p = people.find(x => x.id === ui.person); const a = chartOf(p); ui.horY = a.rawDates.lunarDate.lunarYear + (+dc.dataset.dec) - 1; saveUI(); renderChart(); return; }
   if (yr) { ui.horY = +yr.dataset.year; saveUI(); renderChart(); return; }
   if (mo) { ui.horM = +mo.dataset.month; if (!ui.horY) ui.horY = getTodayLunar().y; saveUI(); renderChart(); return; }
@@ -909,7 +976,7 @@ document.querySelector('main').addEventListener('click', e => {
   if (s) { ui.star = s.dataset.star; ui.mode = 'star'; go('compare'); }
   else if (w) {
     ui.person = w.dataset.person;
-    if (w.dataset.hyear) { ui.horOn = true; ui.horY = +w.dataset.hyear; ui.layers = Object.assign({ decadal:true, yearly:true, monthly:false }, ui.layers, { decadal:true, yearly:true }); }
+    if (w.dataset.hyear) { ui.horOn = true; ui.horY = +w.dataset.hyear; ui.layers = Object.assign({}, DEFAULT_LAYERS, ui.layers, { decadal:true, yearly:true }); }
     go('chart');
   }
   else if (g) go(g.dataset.go);
