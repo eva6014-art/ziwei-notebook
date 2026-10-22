@@ -364,3 +364,23 @@ dt.pl-t{color:var(--L-partner)}
 .ptable td:first-child{width:3em;color:var(--muted)}
 @media (max-width:700px){.pstars{font-size:8px}}
 .hrow .rl{position:sticky;left:0;background:var(--sheet);z-index:1;padding-right:4px}
+
+/* 這張盤的筆記整合 */
+.cnotes{margin-top:22px;background:var(--sheet);border:1px solid var(--line);border-left:4px solid var(--zi);border-radius:10px;padding:14px}
+.cn-top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:4px}
+.cn-top h3{margin:0;font-family:var(--serif);font-size:20px;flex-basis:100%}
+.cn-top .btn{margin-left:auto;padding:3px 10px;font-size:13px}
+.cn-pal{border-top:1px solid var(--line);padding:12px 0}
+.cn-h{display:flex;gap:10px;align-items:baseline;margin-bottom:6px}
+.cn-h b{font-family:var(--serif);font-size:18px;color:var(--zi)}
+.cn-c{margin-left:auto;font-size:12px}
+.cn-item{margin:6px 0 10px}
+.cn-t{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px}
+.cn-t .note-expand{padding:0 8px;font-size:12px;font-weight:400}
+.cn-x{white-space:pre-wrap;line-height:1.8;font-size:15px;padding:4px 0 0 10px;border-left:2px solid var(--zi-soft)}
+.cn-empty{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px}
+.cn-add{border:1px dashed var(--line);background:none;border-radius:999px;padding:1px 9px;font-size:12px;color:var(--muted);cursor:pointer}
+.cn-add:hover{border-color:var(--zi);color:var(--zi)}
+.pd-notes{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.pd-notes .ch-head{font-size:14px;margin-bottom:4px}
+html{scroll-padding-top:70px}

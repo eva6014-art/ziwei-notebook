@@ -513,6 +513,7 @@ function renderChart() {
     ${palDetail(a, marks, yb, h, lays, b, pp)}
     <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。實心標籤是生年四化；<span class="fly 祿">→祿</span> 是本宮宮干自化（離心），<span class="fly 祿 in">←祿</span> 是對宮宮干化入（向心）。宮位左下三行依序為博士、將前、歲前十二神，右下小字為長生十二神。飛化連線：從宮干所在的宮，畫到被化的星所在的宮（自化不畫線）。</p>`;
   if (b) out.insertAdjacentHTML('beforeend', pairPanel(a, b, p, pp));
+  out.insertAdjacentHTML('beforeend', chartNotesPanel(p, a, h));
   out.insertAdjacentHTML('beforeend', eventsPanel(p, a));
   if (ui.lastEvCat && $('#evCat')) $('#evCat').value = ui.lastEvCat;
   document.querySelectorAll('.hrow').forEach(row => { const c = row.querySelector('[aria-pressed="true"]'); if (c) row.scrollLeft = c.offsetLeft - row.clientWidth / 2 + c.offsetWidth / 2; });
@@ -599,6 +600,64 @@ function pairPanel(a, b, pa, pb) {
     <div class="tbl-wrap"><table class="ptable"><thead><tr><th>地支</th><th>${A}</th><th>${B}</th></tr></thead><tbody>${rows}</tbody></table></div>
   </section>`;
 }
+/* ---------- 這張盤的筆記整合 ---------- */
+const CORE_STARS = new Set(GROUPS.flatMap(g => g[1]));
+// 依本命十二宮，找出這張盤每一宮對應到的所有筆記（含寫過與尚未寫的組合）
+function chartNotes(a, h) {
+  const tLayers = h ? activeLayers().filter(L => L === 'decadal' || L === 'yearly') : [];
+  const order = [...a.palaces].sort((x, y) => PALACES.indexOf(normPal(x.name)) - PALACES.indexOf(normPal(y.name)));
+  return order.map(pal => {
+    const n = normPal(pal.name);
+    const items = [];
+    const add = (key, title, kind, core) => items.push({ key, title, kind, text: notes[key] || '', core });
+    add(`宮:${n}`, `${palName(n)}（宮位筆記）`, 'pal', true);
+    allStars(pal).forEach(s => {
+      add(`${s.name}@${n}`, `${s.name}在${palName(n)}`, s.kind, CORE_STARS.has(s.name));
+      if (s.mutagen) add(`化${s.mutagen}@${n}`, `生年化${s.mutagen}（${s.name}）在${palName(n)}`, 'hua', true);
+    });
+    tLayers.forEach(L => {
+      const ln = normPal(h[L].palaceNames[pal.index]), LN = LNAME[L];
+      add(`L:${L}|宮:${ln}`, `${LN}${palName(ln)}（宮位筆記）`, 'layer', true);
+      allStars(pal).forEach(s => {
+        const i = h[L].mutagen.indexOf(s.name);
+        if (i >= 0) add(`L:${L}|化${HN[i]}@${ln}`, `${LN}化${HN[i]}（${s.name}）在${LN}${palName(ln)}`, 'layer', true);
+        if (s.kind === 'major' || CORE_STARS.has(s.name)) { const k = `L:${L}|${s.name}@${ln}`; if (notes[k]) add(k, `${LN}${s.name}在${LN}${palName(ln)}`, 'layer', false); }
+      });
+    });
+    return { pal, n, items };
+  });
+}
+function chartNotesPanel(p, a, h) {
+  const groups = chartNotes(a, h);
+  const all = groups.flatMap(g => g.items.filter(x => x.core || x.text));
+  const done = all.filter(x => x.text).length;
+  const showEmpty = ui.cnEmpty !== false;
+  const body = groups.map(({ pal, n, items }) => {
+    const written = items.filter(x => x.text);
+    const empty = items.filter(x => !x.text && x.core);
+    if (!written.length && !showEmpty) return '';
+    return `<div class="cn-pal" data-cn-br="${pal.earthlyBranch}"><div class="cn-h"><b>${palName(pal.name)}</b><span class="with">${pal.heavenlyStem}${pal.earthlyBranch}・${pal.majorStars.map(s => s.name).join('') || '空宮'}</span><span class="with cn-c">${written.length} 則</span></div>
+      ${written.map(x => `<div class="cn-item"><div class="cn-t">${esc(x.title)}<button type="button" class="note-expand" data-expand="${esc(x.key)}" data-title="${esc(x.title)}">編輯</button></div><div class="cn-x">${esc(x.text)}</div></div>`).join('')}
+      ${showEmpty && empty.length ? `<div class="cn-empty"><span class="with">還沒寫：</span>${empty.map(x => `<button type="button" class="cn-add" data-expand="${esc(x.key)}" data-title="${esc(x.title)}">＋${esc(x.title.replace(/在.+$/, '').replace('（宮位筆記）', '宮位'))}</button>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  return `<section class="cnotes" id="cnotes"><div class="cn-top"><h3>${esc(p.name)} 的筆記整合</h3>
+      <span class="with">這張盤共有 ${all.length} 個主要組合，你寫過 ${done} 個（${all.length ? Math.round(done / all.length * 100) : 0}%）</span>
+      <label class="lyr"><input type="checkbox" data-cn-empty ${showEmpty ? 'checked' : ''}> 顯示還沒寫的組合</label>
+      <button class="btn" type="button" data-cn-md>下載這張盤的筆記</button></div>
+    <p class="with" style="margin:0 0 10px;font-size:13px">把你在對照頁、筆記頁寫過的內容，依這位朋友的十二宮自動套進來，從命宮讀到父母宮就是一份完整的解盤草稿。${h ? '已開啟運限，大限、流年的筆記也會一起列出。' : '打開上方「顯示運限」，大限、流年的筆記也會一起列出。'}點「＋」可以直接補寫。</p>
+    ${body}</section>`;
+}
+function chartNotesMarkdown(p, a, h) {
+  let md = `# ${p.name} 的命盤筆記\n\n${a.solarDate}　${a.lunarDate} ${a.time}　${a.fiveElementsClass}　命主${a.soul}／身主${a.body}\n`;
+  chartNotes(a, h).forEach(({ pal, items }) => {
+    const w = items.filter(x => x.text);
+    md += `\n## ${palName(pal.name)}（${pal.heavenlyStem}${pal.earthlyBranch}）${pal.majorStars.map(s => s.name).join('、') || '空宮'}\n`;
+    if (!w.length) md += '\n（尚無筆記）\n';
+    w.forEach(x => { md += `\n### ${x.title}\n\n${x.text}\n`; });
+  });
+  return md;
+}
 function palDetail(a, marks, yb, h, lays, b, pp) {
   const pal = a.palaces.find(x => x.earthlyBranch === ui.selBr);
   const br = pal.earthlyBranch, st = allStars(pal);
@@ -629,6 +688,8 @@ function palDetail(a, marks, yb, h, lays, b, pp) {
       <dt>小限</dt><dd>${pal.ages.join(', ')}</dd>
       <dt>十二神</dt><dd>博士 ${esc(godName(pal.boshi12))}・將前 ${esc(pal.jiangqian12)}・歲前 ${esc(pal.suiqian12)}・長生 ${esc(pal.changsheng12)}</dd>
     </dl>
+    ${(() => { const g = chartNotes(a, h).find(x => x.pal === pal); const w = g ? g.items.filter(x => x.text) : [];
+      return `<div class="pd-notes"><div class="ch-head">這一宮的筆記 <span class="with">${w.length} 則</span>${w.length ? '' : '<span class="with">（還沒寫，可以在下方「筆記整合」補寫）</span>'}</div>${w.map(x => `<div class="cn-item"><div class="cn-t">${esc(x.title)}<button type="button" class="note-expand" data-expand="${esc(x.key)}" data-title="${esc(x.title)}">編輯</button></div><div class="cn-x">${esc(x.text)}</div></div>`).join('')}</div>`; })()}
     ${flyInfo(a, pal)}
     <p class="pd-tip">點盤上任一格可切換宮位；點這裡的星名可以看所有朋友的這顆星。</p></div>`;
 }
@@ -925,10 +986,14 @@ $('#personSel').addEventListener('change', e => { ui.person = e.target.value; sa
 $('#partnerSel').addEventListener('change', e => { ui.partner = e.target.value || null; saveUI(); renderChart(); });
 function swapPair() { if (!ui.partner) return; const t = ui.person; ui.person = ui.partner; ui.partner = t; saveUI(); renderChart(); }
 $('#swapBtn').addEventListener('click', swapPair);
+$('#toNotesBtn').addEventListener('click', () => document.getElementById('cnotes')?.scrollIntoView({ behavior:'smooth', block:'start' }));
 $('#detailSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.detail = b.dataset.detail; saveUI(); renderChart(); });
 
 document.querySelector('main').addEventListener('click', e => {
   if (e.target.closest('[data-swap]')) { swapPair(); return; }
+  const cne = e.target.closest('[data-cn-empty]');
+  if (cne) { ui.cnEmpty = cne.checked; saveUI(); renderChart(); document.getElementById('cnotes')?.scrollIntoView({ block:'start' }); return; }
+  if (e.target.closest('[data-cn-md]')) { const p = people.find(x => x.id === ui.person); const a = chartOf(p); saveFile(`${p.name}-命盤筆記.md`, chartNotesMarkdown(p, a, horOf(a)), 'text/markdown;charset=utf-8'); return; }
   const evv = e.target.closest('[data-ev-view]'), evd = e.target.closest('[data-ev-del]'), sfc = e.target.closest('[data-sf]');
   if (sfc) { ui.sf = sfc.checked; saveUI(); renderChart(); return; }
   if (evd) {
@@ -1029,7 +1094,10 @@ document.querySelector('main').addEventListener('click', e => {
 });
 dlgText.addEventListener('input', () => setNote(dlg.dataset.key, dlgText.value));
 $('#noteDlgClose').addEventListener('click', () => { save(KEY_N, notes); dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
-dlg.addEventListener('close', () => save(KEY_N, notes));
+dlg.addEventListener('close', () => {
+  save(KEY_N, notes);
+  if (ui.view === 'chart') { const y = window.scrollY; renderChart(); window.scrollTo(0, y); }
+});
 const growAll = () => document.querySelectorAll('textarea[data-note]').forEach(autoGrow);
 
 syncTimeUI();
