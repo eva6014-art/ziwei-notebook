@@ -384,3 +384,20 @@ dt.pl-t{color:var(--L-partner)}
 .pd-notes{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
 .pd-notes .ch-head{font-size:14px;margin-bottom:4px}
 html{scroll-padding-top:70px}
+
+/* 命例檔案 */
+.cn-stat{font-size:13px;margin:4px 0}
+.cn-stat b{color:var(--zi)}
+.pn-box{margin:4px 0 8px;background:var(--zi-soft);border-radius:8px;padding:8px 10px}
+.pn-box.big{margin:10px 0 14px}
+.pn-l{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--zi);margin-bottom:4px}
+.pn-l .note-expand{margin-left:auto;padding:0 8px;font-size:12px}
+.pn-box textarea{width:100%;min-height:64px;resize:vertical;line-height:1.7;font-size:15px;padding:8px 10px;background:var(--sheet)}
+.pn-box.big textarea{min-height:100px}
+.cn-gen-l{font-size:12px;color:var(--muted);margin:10px 0 2px}
+.cn-ment{border-top:2px solid var(--ink);margin-top:10px;padding-top:10px}
+.cn-ment h4{margin:0 0 6px;font-family:var(--serif);font-size:17px}
+.cn-ment h4 small{font-family:var(--sans);font-size:12px;font-weight:400;margin-left:6px}
+.pn-snip{margin:2px 0 4px;font-size:13px;color:var(--ink);background:var(--zi-soft);border-radius:6px;padding:3px 8px;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;flex-basis:100%}
+.pn-snip.open{display:block}
+.ngroup > h3 .go{font-family:var(--sans);font-size:13px;font-weight:400;color:var(--zi);border:0;background:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-left:auto}

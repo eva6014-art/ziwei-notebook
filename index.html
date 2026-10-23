@@ -64,7 +64,7 @@
       <select id="personSel" aria-label="選擇朋友"></select>
       <select id="partnerSel" aria-label="合盤對象"></select>
       <button class="btn" id="swapBtn" type="button" hidden title="對調兩人">⇄ 對調</button>
-      <button class="btn" id="toNotesBtn" type="button">📒 這張盤的筆記</button>
+      <button class="btn" id="toNotesBtn" type="button">📒 命例檔案</button>
       <div class="seg" role="group" aria-label="顯示內容" id="detailSeg">
         <button data-detail="full">完整</button>
         <button data-detail="simple">精簡</button>
@@ -80,6 +80,7 @@
       <div class="seg" role="group" aria-label="筆記分組">
         <button data-ngroup="star">依星曜</button>
         <button data-ngroup="palace">依宮位</button>
+        <button data-ngroup="person">依朋友</button>
       </div>
       <input type="text" id="noteSearch" placeholder="搜尋筆記內容、星名、宮名" aria-label="搜尋筆記" style="flex:1;min-width:180px">
       <button class="btn" id="noteMdBtn">下載全部筆記（Markdown）</button>
@@ -137,6 +138,7 @@
         </div>
         <label class="f" id="hourWrap" hidden>出生時辰<select id="fTime"></select></label>
         <label class="f">備註（選填）<input type="text" id="fNote" maxlength="60" placeholder="例如：個性、職業、已知事件"></label>
+        <label class="f">筆記中的稱呼（選填）<input type="text" id="fAlias" maxlength="60" placeholder="寫筆記時怎麼叫他，用逗號分隔，例如：均姐, 阿均"></label>
         <div class="err" id="fErr"></div>
         <div class="inline">
           <button class="btn primary" type="submit" id="saveBtn">儲存</button>
