@@ -455,3 +455,24 @@ dialog.carddlg::backdrop{background:rgba(20,16,30,.55)}
 .qnotes{text-align:left}
 .quiz .go{border:0;background:none;color:var(--zi);cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-size:inherit;padding:0}
 .qcard .kw:not(.q){color:var(--gc);font-weight:700}
+
+/* 註解 */
+.scard .ann{font-size:11px;color:var(--muted);line-height:1.4;padding:2px 8px 0}
+.qcard .ann{font-size:13px;padding:0 10px 4px}
+dd.xing small{color:var(--muted);font-size:12px;margin-left:2px}
+dd.xing span{white-space:normal}
+.pd-ann{flex-basis:100%;font-size:13px;line-height:1.6;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
+.pd-ann .note-expand{padding:0 8px;font-size:12px}
+.sann{display:inline-block;font-size:15px;color:var(--ink);background:var(--zi-soft);border-radius:6px;padding:2px 8px;margin-bottom:4px}
+.cann{font-size:11px;color:var(--muted);line-height:1.45;border-left:2px solid var(--zi-soft);padding-left:5px}
+@media (max-width:700px){.cann{display:none}}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.pcard{background:var(--sheet);border:1px solid var(--line);border-top:3px solid var(--zi);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.pc-h{display:flex;flex-direction:column}
+.pc-h b{font-family:var(--serif);font-size:20px;color:var(--zi)}
+.pc-h span{font-size:12px}
+.pcard textarea{width:100%;resize:vertical;line-height:1.6;font-size:14px}
+.pc-f{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12px}
+.pc-f .go,.cd-meta textarea{font-size:inherit}
+.pc-f .go{border:0;background:none;color:var(--zi);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0}
+.cd-meta textarea{width:100%;resize:vertical;line-height:1.6;font-size:14px}
