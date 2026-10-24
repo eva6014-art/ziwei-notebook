@@ -22,7 +22,8 @@ const POS = {'巳':[1,1],'午':[1,2],'未':[1,3],'申':[1,4],'辰':[2,1],'酉':[
 /* ---------- 儲存 ---------- */
 const KEY_P = 'ziwei.people.v1', KEY_N = 'ziwei.notes.v1', KEY_UI = 'ziwei.ui.v1', KEY_E = 'ziwei.events.v1', KEY_M = 'ziwei.meta.v1', KEY_S = 'ziwei.settings.v1';
 const KEY_PN = 'ziwei.pnotes.v1';
-const DATA_KEYS = [KEY_P, KEY_N, KEY_E, KEY_S, KEY_PN];
+const KEY_C = 'ziwei.cards.v1';
+const DATA_KEYS = [KEY_P, KEY_N, KEY_E, KEY_S, KEY_PN, KEY_C];
 const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
 const save = (k, v) => {
   try {
@@ -35,7 +36,21 @@ let bannerReady = false;
 let people = load(KEY_P, []);
 let notes = load(KEY_N, {});
 let events = load(KEY_E, {});
-let pnotes = load(KEY_PN, {});   // { 朋友id: { _summary: 整體印象, 命宮: 實際狀況, ... } }
+let pnotes = load(KEY_PN, {});
+/* ---------- 星曜卡：原創圖示＋課程關鍵字（關鍵字可自行修改） ---------- */
+const CARD_GROUPS = [
+  ['北斗星系','north',[['紫微','👑','皇帝'],['貪狼','🍷','慾望'],['巨門','🌑','暗星'],['廉貞','📏','廉潔、規則'],['武曲','💰','錢、武力'],['破軍','💥','破壞']]],
+  ['南斗星系','south',[['天府','🏯','王爺'],['天梁','📖','教育'],['天機','⚙️','思考'],['天同','🎶','享樂'],['天相','🔏','宰相'],['七殺','🗡️','勇往直前']]],
+  ['中天星系','mid',[['太陽','☀️','太陽'],['太陰','🌙','月亮']]],
+  ['六吉星','good',[['文昌','✍️','寫字'],['文曲','🎼','藝術、才華'],['天魁','👴','男性長輩'],['天鉞','👵','女性長輩'],['左輔','🙋‍♂️','男性貴人'],['右弼','🙋‍♀️','女性貴人']]],
+  ['四煞星','bad',[['火星','🌋','瞬間爆炸'],['鈴星','💣','壓抑後爆炸'],['擎羊','🔪','衝動、像刀一樣'],['陀羅','⛓️','拖延、折磨']]],
+  ['空星','void',[['地空','🌫️','忽然斷掉消失'],['地劫','🌊','忽然被搶走']]],
+  ['雜曜','misc',[['紅鸞','💍','正緣'],['天喜','🎉','喜事'],['天姚','🌸','風流、野桃花'],['祿存','🪙','多一個'],['天馬','🐎','奔波'],['天刑','🚨','官非']]],
+];
+const CARD = {};
+CARD_GROUPS.forEach(([g, cls, list]) => list.forEach(([n, icon, kw]) => { CARD[n] = { g, cls, icon, kw }; }));
+let cards = load(KEY_C, {});   // { 星名: { kw:自訂關鍵字, img:自己的圖片, ok:記得次數, miss:不熟次數 } }
+const cardKw = n => (cards[n] && cards[n].kw != null) ? cards[n].kw : (CARD[n] ? CARD[n].kw : '');   // { 朋友id: { _summary: 整體印象, 命宮: 實際狀況, ... } }
 const DEFAULT_SETTINGS = { geng:'陰同', wu:'右弼', ren:'左輔', dayDivide:'forward', yearDivide:'normal', fixLeap:true, algorithm:'default' };
 let settings = Object.assign({}, DEFAULT_SETTINGS, load(KEY_S, {}));
 let ui = Object.assign({ view:'compare', mode:'star', star:'紫微', palace:'命宮', person:null }, load(KEY_UI, {}));
@@ -265,15 +280,18 @@ function starHTML(s, clickable = true) {
   const b = s.brightness ? `<span class="b">${esc(s.brightness)}</span>` : '';
   const h = s.mutagen ? `<span class="hua ${esc(s.mutagen)}">${esc(s.mutagen)}</span>` : '';
   const c = clickable ? ' clickable' : '';
-  return `<span class="s ${s.kind}${c}" data-star="${esc(s.name)}">${esc(s.name)}${b}${h}</span>`;
+  const card = CARD[s.name];
+  const ic = card && ui.icons !== false ? `<i class="si" aria-hidden="true">${card.icon}</i>` : '';
+  return `<span class="s ${s.kind}${c}" data-star="${esc(s.name)}"${card ? ` title="${esc(s.name)}：${esc(cardKw(s.name))}"` : ''}>${ic}${esc(s.name)}${b}${h}</span>`;
 }
 let tt;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2200); }
-function noteBlock(key, label) {
+function noteBlock(key, label, ph) {
   const v = notes[key] || '';
+  ph = ph || '寫下你觀察到的共通點、書上的解釋…';
   return `<details class="note"${v ? '' : ''}><summary class="${v ? 'has' : ''}">${v ? '我的筆記：' + esc(v.slice(0, 30)) + (v.length > 30 ? '…' : '') : label}</summary>
-    <textarea data-note="${esc(key)}" placeholder="寫下你觀察到的共通點、書上的解釋…">${esc(v)}</textarea>
-    <div class="note-tools"><button type="button" class="note-expand" data-expand="${esc(key)}" data-title="${esc(label.replace(/^寫筆記：/, ''))}">⤢ 放大編輯</button></div></details>`;
+    <textarea data-note="${esc(key)}" placeholder="${esc(ph)}">${esc(v)}</textarea>
+    <div class="note-tools"><button type="button" class="note-expand" data-expand="${esc(key)}" data-ph="${esc(ph)}" data-title="${esc(label.replace(/^寫筆記：/, ''))}">⤢ 放大編輯</button></div></details>`;
 }
 
 /* ---------- 對照 ---------- */
@@ -354,13 +372,13 @@ function renderByStar() {
     }).join('');
     const nk = L === 'natal' ? `${star}@${n}` : `L:${L}|${star}@${n}`;
     return `<div class="row${list.length ? '' : ' empty'}">
-      <div class="pname">${LN ? `<small class="lname ${L}">${LN}</small>` : ''}${palName(n)}<span>${list.length} 人</span></div>
+      <div class="pname">${LN ? `<small class="lname ${L}">${LN}</small>` : ''}${palName(n)}<span>${list.length} 人</span>${L === 'natal' && PAL_HINT[n] ? `<em class="phint">${PAL_HINT[n]}</em>` : ''}</div>
       <div class="hits">${hits || '<span class="with">—</span>'}
-        ${noteBlock(nk, `寫筆記：${LN}${star}在${LN}${palName(n)}`)}</div></div>`;
+        ${noteBlock(nk, `寫筆記：${LN}${star}在${LN}${palName(n)}`, CARD[star] && L === 'natal' ? derivePrompt(star, n) : '')}</div></div>`;
   }).join('');
   const desc = L === 'natal' ? `${people.length} 位朋友的${esc(star)}分別落在哪一宮。`
     : `${Y} 年（${yearGZ(Y)}）的${LN}盤：每位朋友的${star.startsWith('化') ? `${LN}${esc(star)}` : esc(star)}落在${LN}的哪一宮，括號內是本命宮位。`;
-  return `<div class="focus"><h2>${LN ? `<span class="lname-big ${L}">${LN}</span>` : ''}${esc(star)}</h2>
+  return `<div class="focus">${CARD[star] ? miniCard(star) : ''}<h2>${LN ? `<span class="lname-big ${L}">${LN}</span>` : ''}${esc(star)}</h2>
     <p>${desc}${missing.length ? '<br>沒有列入：' + missing.map(esc).join('、') : ''}</p></div>
     <div class="rows">${rows}</div>`;
 }
@@ -498,6 +516,7 @@ function renderChart() {
   const flybar = `<div class="flybar"><span class="lbl">飛化連線</span>
     ${HN.map(h => `<button class="hb ${h}" data-line="${h}" aria-pressed="${lines.includes(h)}">${h}</button>`).join('')}
     <label class="lyr"><input type="checkbox" data-sf ${ui.sf === false ? '' : 'checked'}> 三方四正</label>
+    <label class="lyr"><input type="checkbox" data-icons ${ui.icons === false ? '' : 'checked'}> 星曜圖示</label>
     <div class="seg" role="group" aria-label="連線範圍">
       <button data-scope="sel" aria-pressed="${(ui.scope || 'sel') === 'sel'}">選取的宮</button>
       <button data-scope="all" aria-pressed="${ui.scope === 'all'}">全盤</button>
@@ -731,6 +750,7 @@ function palDetail(a, marks, yb, h, lays, b, pp) {
           <dt class="pl-t">飛入對方</dt><dd><div class="flist">我的${pal.heavenlyStem}干：${flyTo(pal, b, '他的')}</div><div class="flist">他的${bp.heavenlyStem}干：${flyTo(bp, a, '我的')}</div></dd>`;
       })() : ''}
       <dt>三方四正</dt><dd>${(() => { const at = d => a.palaces.find(x => x.earthlyBranch === BR[(BR.indexOf(br) + d) % 12]); return `對宮 ${palName(at(6).name)}・三合 ${palName(at(4).name)}、${palName(at(8).name)}`; })()}</dd>
+      ${st.some(s => CARD[s.name]) ? `<dt>星性</dt><dd class="xing">${st.filter(s => CARD[s.name]).map(s => `<span class="g-${CARD[s.name].cls}"><i>${CARD[s.name].icon}</i><b>${esc(s.name)}</b>＝${esc(cardKw(s.name))}</span>`).join('')}<div class="with" style="font-size:12px;margin-top:2px">把這幾個特質放進「${esc(PAL_HINT[normPal(pal.name)] || palName(pal.name))}」的場景裡想一想。</div></dd>` : ''}
       <dt>主星</dt><dd class="big">${st.some(s => s.kind === 'major') ? list('major') : '空宮'}</dd>
       <dt>吉星</dt><dd>${list('soft')}</dd>
       <dt>煞星</dt><dd>${list('tough')}</dd>
@@ -894,6 +914,151 @@ $('#notesOut').addEventListener('click', e => {
   if (ge) { ui.evCat = ge.dataset.goevcat; ui.mode = 'event'; go('compare'); }
 });
 
+/* ---------- 星曜卡 ---------- */
+function cardArt(n, big) {
+  const img = cards[n] && cards[n].img;
+  return img ? `<img src="${img}" alt="">` : `<span class="emo${big ? ' big' : ''}" aria-hidden="true">${CARD[n].icon}</span>`;
+}
+function miniCard(n) {
+  return `<div class="fcard g-${CARD[n].cls}" data-opencard="${esc(n)}" title="打開${esc(n)}的星曜卡">${cardArt(n)}<span>${esc(cardKw(n))}</span></div>`;
+}
+function derivePrompt(star, n) {
+  return `推推看：${star}（${cardKw(star)}）落在${palName(n)}（${PAL_HINT[n] || ''}），會是什麼樣子？先寫下你的推論，再對照課程筆記。`;
+}
+const noteCount = n => PALACES.filter(p => notes[`${n}@${p}`]).length;
+function renderCards() {
+  const mode = ui.cardMode || 'grid';
+  document.querySelectorAll('#v-cards [data-cardmode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.cardmode === mode));
+  $('#cardGroup').innerHTML = ['全部', ...CARD_GROUPS.map(g => g[0]), '不熟的'].map(g => `<option${g === (ui.cardGroup || '全部') ? ' selected' : ''}>${g}</option>`).join('');
+  $('#quizDir').hidden = mode !== 'quiz';
+  document.querySelectorAll('#v-cards [data-quizdir]').forEach(b => b.setAttribute('aria-pressed', b.dataset.quizdir === (ui.quizDir || 'kw')));
+  const out = $('#cardsOut');
+  if (mode === 'quiz') { renderQuiz(out); return; }
+  const pick = ui.cardGroup || '全部';
+  const groups = CARD_GROUPS.filter(g => pick === '全部' || pick === '不熟的' || g[0] === pick);
+  out.innerHTML = `<p class="with" style="margin:0 0 12px">每顆星先記住一個核心特質，再放進宮位的場景裡推。點卡片可以看這顆星在十二宮的筆記，也可以改關鍵字、放自己的圖。</p>` + groups.map(([g, cls, list]) => {
+    const items = list.filter(([n]) => pick !== '不熟的' || (cards[n]?.miss || 0) > (cards[n]?.ok || 0));
+    if (!items.length) return '';
+    return `<h3 class="cg-h">${g}</h3><div class="cgrid">${items.map(([n]) => {
+      const nc = noteCount(n), inMing = whoHas(n, '命宮').length;
+      return `<button type="button" class="scard g-${cls}" data-opencard="${esc(n)}"><div class="art">${cardArt(n, true)}</div><div class="nm">${esc(n)}</div><div class="kw">${esc(cardKw(n))}</div><div class="ft">筆記 ${nc}/12 宮${inMing ? `・命宮 ${inMing} 人` : ''}</div></button>`;
+    }).join('')}</div>`;
+  }).join('') || '<p class="with">目前沒有標記為不熟的星。到「練習」模式按「不熟」，這裡就會列出來。</p>';
+}
+const cardDlgEl = $('#cardDlg');
+function renderCardDetail(n) {
+  const c = CARD[n];
+  cardDlgEl.dataset.star = n;
+  const rows = PALACES.map(p => {
+    const k = `${n}@${p}`, v = notes[k] || '', ppl = whoHas(n, p);
+    return `<div class="cd-row"><div class="cd-p"><b>${palName(p)}</b><small>${PAL_HINT[p] || ''}</small></div>
+      <div class="cd-n">${v ? `<div class="cn-x">${esc(v)}</div>` : ''}
+        <button type="button" class="note-expand" data-expand="${esc(k)}" data-title="${esc(n)}在${palName(p)}" data-ph="${esc(derivePrompt(n, p))}">${v ? '編輯' : '＋ 推推看'}</button>
+        ${ppl.length ? `<span class="ppl">符合：${ppl.map(x => esc(x.name)).join('、')}</span>` : ''}</div></div>`;
+  }).join('');
+  $('#cardDlgBody').innerHTML = `<div class="cd-top g-${c.cls}">
+      <div class="scard big g-${c.cls}"><div class="art">${cardArt(n, true)}</div><div class="nm">${esc(n)}</div><div class="kw">${esc(cardKw(n))}</div></div>
+      <div class="cd-meta">
+        <div class="with">${c.g}</div>
+        <label class="f">核心特質（可以改成你自己的話）<input type="text" data-card-kw="${esc(n)}" value="${esc(cardKw(n))}" maxlength="30"></label>
+        <div class="inline">
+          <label class="btn">放自己的圖片<input type="file" accept="image/*" data-card-img="${esc(n)}" hidden></label>
+          ${cards[n]?.img ? `<button class="btn" type="button" data-card-imgdel="${esc(n)}">移除圖片</button>` : ''}
+          ${cards[n]?.kw != null ? `<button class="btn" type="button" data-card-kwreset="${esc(n)}">恢復原本關鍵字</button>` : ''}
+        </div>
+        <p class="hint">圖片只存在這台裝置的瀏覽器，不會上傳到網站，可以放你自己畫的圖或手寫筆記的照片。</p>
+        <div class="inline"><button class="btn primary" type="button" data-card-compare="${esc(n)}">到對照頁看所有朋友的${esc(n)}</button></div>
+      </div></div>
+    <h4 class="cd-h">${esc(n)}在十二宮（已寫 ${noteCount(n)} 宮）</h4>${rows}`;
+}
+function openCard(n) {
+  if (!CARD[n]) return;
+  renderCardDetail(n);
+  $('#cardDlgTitle').textContent = `${n}・星曜卡`;
+  if (cardDlgEl.showModal) cardDlgEl.showModal(); else cardDlgEl.setAttribute('open', '');
+}
+// 練習：不熟的星出現機率較高
+let quizCur = null, quizShown = false, quizScore = { ok:0, all:0 };
+function quizPool() {
+  const pick = ui.cardGroup || '全部';
+  return CARD_GROUPS.filter(g => pick === '全部' || pick === '不熟的' || g[0] === pick).flatMap(g => g[2].map(x => x[0]))
+    .filter(n => pick !== '不熟的' || (cards[n]?.miss || 0) > (cards[n]?.ok || 0));
+}
+function quizNext() {
+  const pool = quizPool(); if (!pool.length) { quizCur = null; return; }
+  const w = pool.map(n => 1 + 2 * Math.max(0, (cards[n]?.miss || 0) - (cards[n]?.ok || 0)) + (n === quizCur ? -1 : 0));
+  let r = Math.random() * w.reduce((x, y) => x + Math.max(y, 0.01), 0);
+  quizCur = pool[pool.length - 1];
+  for (let i = 0; i < pool.length; i++) { r -= Math.max(w[i], 0.01); if (r <= 0) { quizCur = pool[i]; break; } }
+  quizShown = false;
+}
+function renderQuiz(out) {
+  if (!quizCur || !quizPool().includes(quizCur)) quizNext();
+  if (!quizCur) { out.innerHTML = '<p class="with">這個分類目前沒有卡片。</p>'; return; }
+  const n = quizCur, c = CARD[n], dir = ui.quizDir || 'kw';
+  const front = dir === 'kw'
+    ? `<div class="art">${cardArt(n, true)}</div><div class="nm">${esc(n)}</div><div class="kw${quizShown ? '' : ' q'}">${quizShown ? esc(cardKw(n)) : '？'}</div>`
+    : `<div class="art">${quizShown ? cardArt(n, true) : '<span class="emo big">？</span>'}</div><div class="nm">${quizShown ? esc(n) : '這是哪顆星？'}</div><div class="kw">${esc(cardKw(n))}</div>`;
+  const notesList = quizShown ? PALACES.filter(p => notes[`${n}@${p}`]).slice(0, 3).map(p => `<div class="cn-item"><div class="cn-t">${esc(n)}在${palName(p)}</div><div class="cn-x">${esc(notes[`${n}@${p}`])}</div></div>`).join('') : '';
+  out.innerHTML = `<div class="quiz">
+    <p class="with">本輪 ${quizScore.ok} / ${quizScore.all}　・　${dir === 'kw' ? '看星，想想它的核心特質' : '看特質，想想是哪顆星'}</p>
+    <div class="scard qcard g-${c.cls}">${front}</div>
+    ${quizShown ? `<div class="qbtns"><button class="btn primary" data-quiz="ok">記得</button><button class="btn" data-quiz="miss">不熟</button></div>
+      ${notesList ? `<div class="qnotes"><div class="with" style="font-size:13px">你寫過的筆記：</div>${notesList}</div>` : `<p class="with">你還沒寫過${esc(n)}的筆記。<button class="go" data-opencard="${esc(n)}">打開星曜卡寫一則</button></p>`}`
+      : `<div class="qbtns"><button class="btn primary" data-quiz="show">翻牌</button><button class="btn" data-quiz="skip">跳過</button></div>`}
+  </div>`;
+}
+let ckw;
+document.getElementById('v-cards').addEventListener('click', e => {
+  const m = e.target.closest('[data-cardmode]'); if (m) { ui.cardMode = m.dataset.cardmode; saveUI(); renderCards(); return; }
+  const qd = e.target.closest('[data-quizdir]'); if (qd) { ui.quizDir = qd.dataset.quizdir; saveUI(); quizShown = false; renderCards(); return; }
+  const q = e.target.closest('[data-quiz]');
+  if (q) {
+    const act = q.dataset.quiz;
+    if (act === 'show') quizShown = true;
+    else if (act === 'skip') quizNext();
+    else {
+      cards[quizCur] = Object.assign({}, cards[quizCur]); cards[quizCur][act] = (cards[quizCur][act] || 0) + 1; save(KEY_C, cards);
+      quizScore.all++; if (act === 'ok') quizScore.ok++; quizNext();
+    }
+    renderCards(); return;
+  }
+  const del = e.target.closest('[data-card-imgdel]');
+  if (del) { const n = del.dataset.cardImgdel; if (cards[n]) { delete cards[n].img; save(KEY_C, cards); } renderCardDetail(n); renderCards(); return; }
+  const rs = e.target.closest('[data-card-kwreset]');
+  if (rs) { const n = rs.dataset.cardKwreset; if (cards[n]) { delete cards[n].kw; save(KEY_C, cards); } renderCardDetail(n); renderCards(); return; }
+  const cmp = e.target.closest('[data-card-compare]');
+  if (cmp) { cardDlgEl.close(); ui.star = cmp.dataset.cardCompare; ui.mode = 'star'; ui.cLayer = 'natal'; go('compare'); return; }
+});
+$('#cardGroup').addEventListener('change', e => { ui.cardGroup = e.target.value; saveUI(); quizCur = null; renderCards(); });
+document.getElementById('v-cards').addEventListener('input', e => {
+  const k = e.target.closest('[data-card-kw]'); if (!k) return;
+  const n = k.dataset.cardKw; cards[n] = Object.assign({}, cards[n], { kw: k.value.trim() });
+  clearTimeout(ckw); ckw = setTimeout(() => { save(KEY_C, cards); renderCards(); }, 400);
+  cardDlgEl.querySelector('.scard.big .kw').textContent = k.value.trim();
+});
+async function fileToThumb(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((ok, bad) => { img.onload = ok; img.onerror = bad; img.src = url; });
+    const sc = Math.min(1, 360 / Math.max(img.width, img.height));
+    const cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    return cv.toDataURL('image/jpeg', 0.82);
+  } finally { URL.revokeObjectURL(url); }
+}
+document.getElementById('v-cards').addEventListener('change', async e => {
+  const inp = e.target.closest('[data-card-img]'); if (!inp || !inp.files[0]) return;
+  const n = inp.dataset.cardImg;
+  try { cards[n] = Object.assign({}, cards[n], { img: await fileToThumb(inp.files[0]) }); save(KEY_C, cards); renderCardDetail(n); renderCards(); toast('已放上圖片'); }
+  catch { toast('這個檔案無法當作圖片使用'); }
+});
+$('#cardDlgClose').addEventListener('click', () => cardDlgEl.close());
+cardDlgEl.addEventListener('close', () => { if (ui.view === 'cards') renderCards(); if (ui.view === 'compare') renderCompare(); });
+// 任何頁面點小卡片都能打開星曜卡
+document.querySelector('main').addEventListener('click', e => { const oc = e.target.closest('[data-opencard]'); if (oc) openCard(oc.dataset.opencard); });
+
 /* ---------- 朋友 ---------- */
 function renderPeople() {
   $('#plist').innerHTML = people.length ? people.map(p => {
@@ -1007,7 +1172,7 @@ async function saveFile(name, text, type) {
   return true;
 }
 async function doBackup() {
-  const data = { version:3, exportedAt:new Date().toISOString(), people, notes, events, pnotes, settings };
+  const data = { version:4, exportedAt:new Date().toISOString(), people, notes, events, pnotes, cards, settings };
   const ok = await saveFile(`ziwei-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
   if (ok) { meta.lastBackup = Date.now(); save(KEY_M, meta); renderBackupBanner(); toast('已匯出備份'); }
 }
@@ -1028,6 +1193,7 @@ $('#importFile').addEventListener('change', async e => {
       events[pid] = (events[pid] || []).concat(nw);
     });
     Object.entries(data.pnotes || {}).forEach(([pid, obj]) => { pnotes[pid] = Object.assign({}, obj, pnotes[pid] || {}); });
+    Object.entries(data.cards || {}).forEach(([n, obj]) => { cards[n] = Object.assign({}, obj, cards[n] || {}); }); save(KEY_C, cards);
     save(KEY_P, people); save(KEY_N, notes); save(KEY_E, events); save(KEY_PN, pnotes); refresh();
     toast(`匯入 ${add.length} 位朋友${ev ? `、${ev} 筆事件` : ''}`);
   } catch { toast('這個檔案不是本網頁匯出的備份'); }
@@ -1053,6 +1219,7 @@ function refresh() {
   if (ui.view === 'chart') renderChart();
   if (ui.view === 'people') renderPeople();
   if (ui.view === 'notes') renderNotes();
+  if (ui.view === 'cards') renderCards();
 }
 document.querySelector('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.view); });
 document.querySelector('.seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ui.mode = b.dataset.mode; saveUI(); renderCompare(); } });
@@ -1089,6 +1256,8 @@ document.querySelector('main').addEventListener('click', e => {
   if (e.target.closest('[data-cn-md]')) { const p = people.find(x => x.id === ui.person); const a = chartOf(p); saveFile(`${p.name}-命例檔案.md`, chartNotesMarkdown(p, a, horOf(a)), 'text/markdown;charset=utf-8'); return; }
   const evv = e.target.closest('[data-ev-view]'), evd = e.target.closest('[data-ev-del]'), sfc = e.target.closest('[data-sf]');
   if (sfc) { ui.sf = sfc.checked; saveUI(); renderChart(); return; }
+  const icc = e.target.closest('[data-icons]');
+  if (icc) { ui.icons = icc.checked; saveUI(); renderChart(); return; }
   if (evd) {
     const list = events[ui.person] || []; const ev = list.find(x => x.id === evd.dataset.evDel);
     if (ev && confirm(`刪除「${ev.y} ${ev.text}」？`)) { events[ui.person] = list.filter(x => x !== ev); save(KEY_E, events); renderChart(); toast('已刪除事件'); }
@@ -1195,6 +1364,7 @@ document.querySelector('main').addEventListener('click', e => {
   if (bp) { dlg.dataset.kind = 'p'; dlg.dataset.key = bp.dataset.expandP; const [pid, ...k] = bp.dataset.expandP.split('|'); dlgText.value = pn(pid, k.join('|')); }
   else { dlg.dataset.kind = 'n'; dlg.dataset.key = b.dataset.expand; dlgText.value = notes[b.dataset.expand] || ''; }
   $('#noteDlgTitle').textContent = b.dataset.title || '筆記';
+  dlgText.placeholder = b.dataset.ph || '寫下你觀察到的共通點、書上的解釋…';
   if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   dlgText.focus();
 });
@@ -1206,6 +1376,7 @@ $('#noteDlgClose').addEventListener('click', () => { dlg.close ? dlg.close() : d
 dlg.addEventListener('close', () => {
   save(KEY_N, notes); save(KEY_PN, pnotes);
   if (ui.view === 'chart') { const y = window.scrollY; renderChart(); window.scrollTo(0, y); }
+  if (ui.view === 'cards') { renderCards(); if (cardDlgEl.open) renderCardDetail(cardDlgEl.dataset.star); }
 });
 const growAll = () => document.querySelectorAll('textarea[data-note],textarea[data-pnote]').forEach(autoGrow);
 

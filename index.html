@@ -24,6 +24,7 @@
     <nav>
       <button data-view="compare" aria-current="true">對照</button>
       <button data-view="chart">命盤</button>
+      <button data-view="cards">星卡</button>
       <button data-view="notes">筆記</button>
       <button data-view="people">朋友</button>
     </nav>
@@ -75,6 +76,25 @@
   </section>
 
   <!-- 朋友 -->
+  <section class="view" id="v-cards">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="星卡模式">
+        <button data-cardmode="grid">卡片</button>
+        <button data-cardmode="quiz">練習</button>
+      </div>
+      <select id="cardGroup" aria-label="星曜分類"></select>
+      <div class="seg" role="group" aria-label="練習方向" id="quizDir" hidden>
+        <button data-quizdir="kw">看星猜特質</button>
+        <button data-quizdir="star">看特質猜星</button>
+      </div>
+    </div>
+    <div id="cardsOut"></div>
+    <dialog id="cardDlg" class="carddlg" aria-labelledby="cardDlgTitle">
+      <div class="dlg-head"><b id="cardDlgTitle">星曜卡</b><button class="btn primary" id="cardDlgClose" type="button">關閉</button></div>
+      <div id="cardDlgBody" class="cd-body"></div>
+    </dialog>
+  </section>
+
   <section class="view" id="v-notes">
     <div class="controls">
       <div class="seg" role="group" aria-label="筆記分組">
