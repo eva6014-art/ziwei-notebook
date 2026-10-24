@@ -47,9 +47,11 @@ const CARD_GROUPS = [
   ['四煞星','bad',[['火星','🌋','瞬間爆炸'],['鈴星','💣','壓抑後爆炸'],['擎羊','🔪','衝動、像刀一樣'],['陀羅','⛓️','拖延、折磨']]],
   ['空星','void',[['地空','🌫️','忽然斷掉消失'],['地劫','🌊','忽然被搶走']]],
   ['雜曜','misc',[['紅鸞','💍','正緣'],['天喜','🎉','喜事'],['天姚','🌸','風流、野桃花'],['祿存','🪙','多一個'],['天馬','🐎','奔波'],['天刑','🚨','官非']]],
+  ['四化','hua',[['化祿','🍀','增加、好緣分','lu'],['化權','⚡','掌控、主導','quan'],['化科','🎓','名聲、條理','ke'],['化忌','⚠️','執著、虧欠','ji']]],
 ];
 const CARD = {};
-CARD_GROUPS.forEach(([g, cls, list]) => list.forEach(([n, icon, kw]) => { CARD[n] = { g, cls, icon, kw }; }));
+CARD_GROUPS.forEach(([g, cls, list]) => list.forEach(([n, icon, kw, own]) => { CARD[n] = { g, cls: own || cls, icon, kw }; }));
+const huaKey = h => '化' + h;   // 祿 → 化祿
 let cards = load(KEY_C, {});   // { 星名: { kw:自訂關鍵字, img:自己的圖片, ok:記得次數, miss:不熟次數 } }
 const cardKw = n => (cards[n] && cards[n].kw != null) ? cards[n].kw : (CARD[n] ? CARD[n].kw : '');
 /* ---------- 註解：星曜（五行、化氣）與宮位，皆可自行修改 ---------- */
@@ -61,6 +63,8 @@ const STAR_ANN = {
   文昌:'陽金，化氣為科甲', 文曲:'陰水，化氣為科甲', 天魁:'陽火，化氣為陽貴', 天鉞:'陰火，化氣為陰貴', 左輔:'陽土，化氣為陽助', 右弼:'陰水，化氣為陰助',
   火星:'陽火，化氣為殺', 鈴星:'陰火，化氣為耗', 擎羊:'陽金、陽火，化氣為刑', 陀羅:'陰金，化氣為忌', 地空:'陰火，化氣為空亡', 地劫:'陽火，化氣為劫殺',
   祿存:'陰土，化氣為財祿', 天馬:'陽火', 紅鸞:'陰水', 天喜:'陽水', 天姚:'陰水', 天刑:'陽火',
+  化祿:'主財祿、機會、圓融、人緣；落在哪一宮，哪裡就有收穫', 化權:'主權力、能力、掌控、擴張；也帶來競爭與壓力',
+  化科:'主名聲、貴人、條理、文書考試；能逢凶化吉、緩解問題', 化忌:'主執著、在意、虧欠、障礙；落在哪一宮，就是一生最放不下的地方',
 };
 let anns = load(KEY_A, {});   // { '星:武曲': 註解, '宮:命宮': 註解 }
 const starAnn = n => anns['星:' + n] != null ? anns['星:' + n] : (STAR_ANN[n] || '');
@@ -297,9 +301,15 @@ function findStar(a, starName) {
 /* ---------- 小工具 ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function huaBadge(m, prefix = '') {
+  const k = huaKey(m), c = CARD[k];
+  const tip = c ? `${prefix}${k}：${cardKw(k)}｜${starAnn(k)}` : k;
+  const ic = c && ui.icons !== false ? `<i class="si">${c.icon}</i>` : '';
+  return `<span class="hua ${esc(m)}" title="${esc(tip)}">${ic}${esc(m)}</span>`;
+}
 function starHTML(s, clickable = true) {
   const b = s.brightness ? `<span class="b">${esc(s.brightness)}</span>` : '';
-  const h = s.mutagen ? `<span class="hua ${esc(s.mutagen)}">${esc(s.mutagen)}</span>` : '';
+  const h = s.mutagen ? huaBadge(s.mutagen) : '';
   const c = clickable ? ' clickable' : '';
   const card = CARD[s.name];
   const ic = card && ui.icons !== false ? `<i class="si" aria-hidden="true">${card.icon}</i>` : '';
@@ -498,7 +508,7 @@ function renderChart() {
   const marks = flyMarks(a);
   const h = horOf(a);
   const lays = h ? activeLayers() : [];
-  const lhua = name => lays.map(L => { const i = h[L].mutagen.indexOf(name); return i < 0 ? '' : `<span class="lh ${HN[i]}" title="${LNAME[L]}化${HN[i]}">${LPFX[L]}${HN[i]}</span>`; }).join('')
+  const lhua = name => lays.map(L => { const i = h[L].mutagen.indexOf(name); return i < 0 ? '' : `<span class="lh ${HN[i]}" title="${LNAME[L]}化${HN[i]}：${esc(cardKw(huaKey(HN[i])))}｜${esc(starAnn(huaKey(HN[i])))}">${LPFX[L]}${HN[i]}</span>`; }).join('')
     + (b ? (i => i < 0 ? '' : `<span class="lh ${HN[i]} pl" title="${esc(pp.name)}的生年化${HN[i]}">他${HN[i]}</span>`)(bHua.indexOf(name)) : '');
   const yb = BR.indexOf(a.rawDates.chineseDate.yearly[1]);
   if (!a.palaces.some(x => x.earthlyBranch === ui.selBr)) ui.selBr = a.palaces.find(x => x.name === '命宮').earthlyBranch;
@@ -775,7 +785,7 @@ function palDetail(a, marks, yb, h, lays, b, pp) {
           <dt class="pl-t">飛入對方</dt><dd><div class="flist">我的${pal.heavenlyStem}干：${flyTo(pal, b, '他的')}</div><div class="flist">他的${bp.heavenlyStem}干：${flyTo(bp, a, '我的')}</div></dd>`;
       })() : ''}
       <dt>三方四正</dt><dd>${(() => { const at = d => a.palaces.find(x => x.earthlyBranch === BR[(BR.indexOf(br) + d) % 12]); return `對宮 ${palName(at(6).name)}・三合 ${palName(at(4).name)}、${palName(at(8).name)}`; })()}</dd>
-      ${st.some(s => CARD[s.name]) ? `<dt>星性</dt><dd class="xing">${st.filter(s => CARD[s.name]).map(s => `<span class="g-${CARD[s.name].cls}"><i>${CARD[s.name].icon}</i><b>${esc(s.name)}</b>＝${esc(cardKw(s.name))}${starAnn(s.name) ? `<small>（${esc(starAnn(s.name))}）</small>` : ''}</span>`).join('')}<div class="with" style="font-size:12px;margin-top:2px">把這幾個特質放進「${esc(palAnn(normPal(pal.name)) || palName(pal.name))}」的場景裡想一想。</div></dd>` : ''}
+      ${st.some(s => CARD[s.name]) ? `<dt>星性</dt><dd class="xing">${[...st.filter(s => CARD[s.name]).map(s => s.name), ...st.filter(s => s.mutagen).map(s => huaKey(s.mutagen))].map(k => `<span class="g-${CARD[k].cls}"><i>${CARD[k].icon}</i><b>${esc(k)}</b>${k.startsWith('化') ? `<small>（${esc(st.find(s => huaKey(s.mutagen || '') === k).name)}）</small>` : ''}＝${esc(cardKw(k))}${starAnn(k) ? `<small>（${esc(starAnn(k))}）</small>` : ''}</span>`).join('')}<div class="with" style="font-size:12px;margin-top:2px">把這幾個特質放進「${esc(palAnn(normPal(pal.name)) || palName(pal.name))}」的場景裡想一想。</div></dd>` : ''}
       <dt>主星</dt><dd class="big">${st.some(s => s.kind === 'major') ? list('major') : '空宮'}</dd>
       <dt>吉星</dt><dd>${list('soft')}</dd>
       <dt>煞星</dt><dd>${list('tough')}</dd>
@@ -968,7 +978,7 @@ function renderCards() {
     if (!items.length) return '';
     return `<h3 class="cg-h">${g}</h3><div class="cgrid">${items.map(([n]) => {
       const nc = noteCount(n), inMing = whoHas(n, '命宮').length;
-      return `<button type="button" class="scard g-${cls}" data-opencard="${esc(n)}"><div class="art">${cardArt(n, true)}</div><div class="nm">${esc(n)}</div><div class="kw">${esc(cardKw(n))}</div>${starAnn(n) ? `<div class="ann">${esc(starAnn(n))}</div>` : ''}<div class="ft">筆記 ${nc}/12 宮${inMing ? `・命宮 ${inMing} 人` : ''}</div></button>`;
+      return `<button type="button" class="scard g-${CARD[n].cls}" data-opencard="${esc(n)}"><div class="art">${cardArt(n, true)}</div><div class="nm">${esc(n)}</div><div class="kw">${esc(cardKw(n))}</div>${starAnn(n) ? `<div class="ann">${esc(starAnn(n))}</div>` : ''}<div class="ft">筆記 ${nc}/12 宮${inMing ? `・命宮 ${inMing} 人` : ''}</div></button>`;
     }).join('')}</div>`;
   }).join('') || '<p class="with">目前沒有標記為不熟的星。到「練習」模式按「不熟」，這裡就會列出來。</p>';
 }

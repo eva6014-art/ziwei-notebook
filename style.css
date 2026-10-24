@@ -476,3 +476,8 @@ dd.xing span{white-space:normal}
 .pc-f .go,.cd-meta textarea{font-size:inherit}
 .pc-f .go{border:0;background:none;color:var(--zi);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0}
 .cd-meta textarea{width:100%;resize:vertical;line-height:1.6;font-size:14px}
+
+/* 四化卡 */
+.g-hua{--gc:var(--zi)}.g-lu{--gc:var(--lu)}.g-quan{--gc:var(--quan)}.g-ke{--gc:var(--ke)}.g-ji{--gc:var(--ji)}
+.hua .si{font-size:.9em;margin-right:1px}
+.lh{cursor:help}
