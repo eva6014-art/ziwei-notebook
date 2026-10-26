@@ -341,7 +341,10 @@ function renderCompare() {
   $('#starSel').hidden = ui.mode !== 'star';
   $('#palSel').hidden = ui.mode !== 'palace';
   $('#evCatSel').hidden = ui.mode !== 'event';
-  $('#layerCtl').hidden = ui.mode === 'event';
+  $('#flySrcSel').hidden = $('#flyHuaSel').hidden = ui.mode !== 'fly';
+  $('#flySrcSel').innerHTML = PALACES.map(n => `<option value="${n}"${n === (ui.flySrc || '命宮') ? ' selected' : ''}>${palName(n)}的宮干</option>`).join('');
+  $('#flyHuaSel').innerHTML = HN.map(h => `<option value="${h}"${h === (ui.flyHua || '忌') ? ' selected' : ''}>化${h}</option>`).join('');
+  $('#layerCtl').hidden = ui.mode === 'event' || ui.mode === 'fly';
   const L = ui.cLayer || 'natal';
   $('#layerSel').value = L;
   $('#yearPick').hidden = L === 'natal';
@@ -349,7 +352,7 @@ function renderCompare() {
   $('#evCatSel').innerHTML = ['全部', ...EV_CATS].map(c => `<option${c === (ui.evCat || '全部') ? ' selected' : ''}>${c}</option>`).join('');
   const out = $('#compareOut');
   if (!people.length) { out.innerHTML = emptyState(); return; }
-  out.innerHTML = ui.mode === 'star' ? renderByStar() : ui.mode === 'palace' ? renderByPalace() : renderByEvent();
+  out.innerHTML = ui.mode === 'star' ? renderByStar() : ui.mode === 'palace' ? renderByPalace() : ui.mode === 'fly' ? renderByFly() : renderByEvent();
 }
 
 // 某年（農曆）的運限資料
@@ -444,6 +447,32 @@ function renderByPalace() {
   return `<div class="focus"><h2>${LN ? `<span class="lname-big ${L}">${LN}</span>` : ''}${palName(n)}</h2><p>${L === 'natal' ? `每位朋友的${palName(n)}裡有哪些星。` : `${Y} 年（${yearGZ(Y)}）每位朋友的${LN}${palName(n)}落在本命哪一宮、裡面有哪些星。`}點星名可以切到「以星找宮」。</p></div>
     <div class="tbl-wrap"><table><thead><tr><th>朋友</th><th>宮位</th><th>主星</th><th>吉星・祿馬</th><th>煞星</th>${L !== 'natal' ? '<th>流曜</th>' : ''}<th>雜曜</th></tr></thead>
     <tbody>${rows}</tbody></table></div>${noteBlock(nk, `寫筆記：${LN}${palName(n)}`)}`;
+}
+
+/* ---------- 以飛化看 ---------- */
+function renderByFly() {
+  const src = ui.flySrc || '命宮', hua = ui.flyHua || '忌', hi = HN.indexOf(hua);
+  const buckets = Object.fromEntries(PALACES.map(n => [n, []]));
+  people.forEach(p => {
+    const a = chartOf(p); if (!a) return;
+    const r = flyTable(a).find(x => x.n === src); const f = r.fl[hi];
+    buckets[f.tn].push({ p, r, f });
+  });
+  const rows = PALACES.map(n => {
+    const list = buckets[n];
+    const hits = list.map(({ p, r, f }) => `<div class="hit"><span class="who" data-person="${esc(p.id)}">${esc(p.name)}</span>
+      <span class="with">${r.pal.heavenlyStem}干</span> ${starHTML({ ...(allStars(f.t).find(x => x.name === f.star) || { name: f.star, kind:'major' }), mutagen:null }, false)}<span class="hua ${hua}">${hua}</span>
+      <span class="with">${f.self ? '自化' : `入${palName(n)}（${f.t.heavenlyStem}${f.t.earthlyBranch}）${hua === '忌' ? (f.toOpp ? '・沖回本宮' : '・沖' + palName(f.chong)) : ''}`}</span>
+      ${(() => { const t = pn(p.id, src); return t ? `<div class="pn-snip" title="點一下展開">${esc(palName(src))}實際：${esc(t)}</div>` : ''; })()}</div>`).join('');
+    const label = n === src ? `${palName(n)}<small class="lname">自化</small>` : palName(n);
+    return `<div class="row${list.length ? '' : ' empty'}">
+      <div class="pname">${label}<span>${list.length} 人</span><em class="phint">${esc(palAnn(n))}</em></div>
+      <div class="hits">${hits || '<span class="with">—</span>'}
+        ${noteBlock(flyKey(src, hua, n), `寫筆記：${n === src ? `${palName(src)}自化${hua}` : `${palName(src)}化${hua}入${palName(n)}`}`, flyPrompt(src, hua, n))}</div></div>`;
+  }).join('');
+  return `<div class="focus">${miniCard(huaKey(hua))}<h2>${palName(src)}化${hua}</h2>
+    <p><span class="sann">${esc(palName(src))}：${esc(palAnn(src))}　化${hua}：${esc(cardKw(huaKey(hua)))}</span><br>每位朋友的${palName(src)}宮干化${hua}，分別飛入哪一宮。名字下方是他${palName(src)}的實際狀況，可以拿來驗證。</p></div>
+    <div class="rows">${rows}</div>`;
 }
 
 /* ---------- 以事件看 ---------- */
@@ -569,6 +598,7 @@ function renderChart() {
     ${palDetail(a, marks, yb, h, lays, b, pp)}
     <p class="legend">淡紫色格子：目前在「對照」選的「${esc(ui.star)}」所在的宮。<span class="s tough">紅字</span>為煞星，<span class="s soft">藍字</span>為吉星。實心標籤是生年四化；<span class="fly 祿">→祿</span> 是本宮宮干自化（離心），<span class="fly 祿 in">←祿</span> 是對宮宮干化入（向心）。宮位左下三行依序為博士、將前、歲前十二神，右下小字為長生十二神。飛化連線：從宮干所在的宮，畫到被化的星所在的宮（自化不畫線）。</p>`;
   if (b) out.insertAdjacentHTML('beforeend', pairPanel(a, b, p, pp));
+  out.insertAdjacentHTML('beforeend', flyPanel(p, a));
   out.insertAdjacentHTML('beforeend', chartNotesPanel(p, a, h));
   out.insertAdjacentHTML('beforeend', eventsPanel(p, a));
   if (ui.lastEvCat && $('#evCat')) $('#evCat').value = ui.lastEvCat;
@@ -668,6 +698,10 @@ function chartNotes(a, h) {
     const items = [];
     const add = (key, title, kind, core) => items.push({ key, title, kind, text: notes[key] || '', core });
     add(`宮:${n}`, `${palName(n)}（宮位筆記）`, 'pal', true);
+    SIHUA[pal.heavenlyStem].forEach((star, i) => {
+      const t = normPal(palOfStar(a, star).name), k = flyKey(n, HN[i], t);
+      if (notes[k]) add(k, t === n ? `${palName(n)}自化${HN[i]}（${star}）` : `${palName(n)}化${HN[i]}入${palName(t)}（${star}）`, 'fly', false);
+    });
     allStars(pal).forEach(s => {
       add(`${s.name}@${n}`, `${s.name}在${palName(n)}`, s.kind, CORE_STARS.has(s.name));
       if (s.mutagen) add(`化${s.mutagen}@${n}`, `生年化${s.mutagen}（${s.name}）在${palName(n)}`, 'hua', true);
@@ -683,6 +717,65 @@ function chartNotes(a, h) {
     });
     return { pal, n, items };
   });
+}
+/* ---------- 宮干飛化總表 ---------- */
+const oppOf = (a, pal) => a.palaces.find(x => x.earthlyBranch === BR[(BR.indexOf(pal.earthlyBranch) + 6) % 12]);
+const flyKey = (src, hua, tgt) => `飛:${src}|${hua}|${tgt}`;
+// 每一宮的宮干四化：飛入哪一宮、是否自化、化忌沖哪一宮
+function flyTable(a) {
+  return PALACES.map(n => {
+    const pal = a.palaces.find(x => normPal(x.name) === n);
+    const fl = SIHUA[pal.heavenlyStem].map((star, i) => {
+      const t = palOfStar(a, star), tn = normPal(t.name);
+      const opp = oppOf(a, t);
+      return { hua: HN[i], star, t, tn, self: t === pal, toOpp: t === oppOf(a, pal), chong: normPal(opp.name) };
+    });
+    return { pal, n, fl };
+  });
+}
+function flyPrompt(src, hua, tgt) {
+  const k = huaKey(hua);
+  return `推推看：${palName(src)}（${palAnn(src)}）的宮干化${hua}（${cardKw(k)}）${src === tgt ? '自化' : `飛入${palName(tgt)}（${palAnn(tgt)}）`}，代表什麼？`;
+}
+function flyPanel(p, a) {
+  const rows = flyTable(a);
+  const inc = Object.fromEntries(PALACES.map(n => [n, { 祿:0, 權:0, 科:0, 忌:0 }]));
+  rows.forEach(r => r.fl.forEach(f => { if (!f.self) inc[f.tn][f.hua]++; }));
+  const maxJi = Math.max(...PALACES.map(n => inc[n].忌)), maxLu = Math.max(...PALACES.map(n => inc[n].祿));
+  const body = rows.map(({ pal, n, fl }) => `<tr${pal.earthlyBranch === ui.selBr ? ' class="on"' : ''}>
+      <th><button type="button" class="fly-pal" data-fly-sel="${pal.earthlyBranch}" title="在盤上畫出${palName(n)}的飛化線">${palName(n)}</button><small>${pal.heavenlyStem}干</small></th>
+      ${fl.map(f => {
+        const k = flyKey(n, f.hua, f.tn), title = f.self ? `${palName(n)}自化${f.hua}（${f.star}）` : `${palName(n)}化${f.hua}入${palName(f.tn)}（${f.star}）`;
+        const extra = f.self ? '' : f.hua === '忌' ? `<small>${f.toOpp ? '沖回本宮' : '沖' + palName(f.chong)}</small>` : f.toOpp ? '<small>入對宮</small>' : '';
+        return `<td class="fc ${f.hua}${f.self ? ' self' : ''}"><button type="button" class="fcell" data-expand="${esc(k)}" data-title="${esc(title)}" data-ph="${esc(flyPrompt(n, f.hua, f.tn))}">
+          <span class="fs">${esc(f.star)}</span><b>${f.self ? '自化' : palName(f.tn)}</b>${extra}${notes[k] ? '<i class="ndot" title="有筆記"></i>' : ''}</button></td>`;
+      }).join('')}</tr>`).join('');
+  const incHtml = PALACES.map(n => {
+    const c = inc[n], tags = [];
+    if (maxJi > 0 && c.忌 === maxJi) tags.push('<em class="tag-ji">忌入最多</em>');
+    if (maxLu > 0 && c.祿 === maxLu) tags.push('<em class="tag-lu">祿入最多</em>');
+    return `<div class="incbox"><b>${palName(n)}</b>${tags.join('')}<div class="incs">${HN.map(h => `<span class="inc ${h}${c[h] ? '' : ' zero'}">${h}${c[h]}</span>`).join('')}</div></div>`;
+  }).join('');
+  const selfs = rows.filter(r => r.fl.some(f => f.self)).map(r => `<li><b>${palName(r.n)}</b>（${r.pal.heavenlyStem}干）：${r.fl.filter(f => f.self).map(f => `${f.star}自化<span class="hua ${f.hua}">${f.hua}</span>`).join('、')}</li>`).join('');
+  const jiBack = rows.filter(r => r.fl.some(f => f.hua === '忌' && f.toOpp)).map(r => `<li><b>${palName(r.n)}</b>化忌入對宮${palName(r.fl[3].tn)}，沖回本宮</li>`).join('');
+  return `<section class="flysum" id="flysum"><div class="cn-top"><h3>${esc(p.name)} 的宮干飛化總表</h3>
+      <span class="with">點宮名會在盤上畫出那一宮的飛化線；點格子可以寫「這一條飛化」的筆記，所有朋友共用。</span></div>
+    <div class="tbl-wrap"><table class="flyt"><thead><tr><th>宮位</th>${HN.map(h => `<th class="fh ${h}">化${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>
+    <h4>飛入統計 <small class="with">其他宮的宮干化入這一宮的次數（不含自化）</small></h4>
+    <div class="incgrid">${incHtml}</div>
+    <div class="flynotes">
+      <div><h4>自化（離心）</h4>${selfs ? `<ul>${selfs}</ul>` : '<p class="with">沒有自化。</p>'}</div>
+      <div><h4>化忌沖回本宮</h4>${jiBack ? `<ul>${jiBack}</ul>` : '<p class="with">沒有。</p>'}</div>
+    </div></section>`;
+}
+function flyMarkdown(a) {
+  let md = `\n## 宮干飛化\n\n| 宮位 | 宮干 | 化祿 | 化權 | 化科 | 化忌 |\n|---|---|---|---|---|---|\n`;
+  flyTable(a).forEach(({ pal, n, fl }) => {
+    md += `| ${palName(n)} | ${pal.heavenlyStem} | ${fl.map(f => `${f.star}→${f.self ? '自化' : palName(f.tn)}${f.hua === '忌' && !f.self ? `（沖${f.toOpp ? '本宮' : palName(f.chong)}）` : ''}`).join(' | ')} |\n`;
+  });
+  const written = flyTable(a).flatMap(r => r.fl.map(f => ({ k: flyKey(r.n, f.hua, f.tn), t: f.self ? `${palName(r.n)}自化${f.hua}（${f.star}）` : `${palName(r.n)}化${f.hua}入${palName(f.tn)}（${f.star}）` }))).filter(x => notes[x.k]);
+  written.forEach(x => { md += `\n### ${x.t}\n\n${notes[x.k]}\n`; });
+  return md;
 }
 const pn = (pid, k) => (pnotes[pid] || {})[k] || '';
 function personTerms(p) {
@@ -754,8 +847,9 @@ function chartNotesMarkdown(p, a, h) {
     evs.forEach(ev => { const i = eventInfo(a, ev); md += `\n- **${ev.y}${ev.m ? '/' + ev.m : ''}**［${ev.cat}］${ev.text}` + (i ? `（${i.age}歲・大限命宮在${palName(i.dec.name)}・流年命宮在${palName(i.yr.name)}・流年忌${i.yhua[3].star}入${palName(i.yhua[3].natal.name)}）` : ''); });
     md += '\n';
   }
+  md += flyMarkdown(a);
   chartNotes(a, h).forEach(({ pal, n, items }) => {
-    const w = items.filter(x => x.text), mine = pn(p.id, n);
+    const w = items.filter(x => x.text && x.kind !== 'fly'), mine = pn(p.id, n);
     md += `\n## ${palName(pal.name)}（${pal.heavenlyStem}${pal.earthlyBranch}）${pal.majorStars.map(s => s.name).join('、') || '空宮'}\n`;
     md += mine ? `\n### 實際狀況\n\n${mine}\n` : `\n（實際狀況尚未記錄）\n`;
     w.forEach(x => { md += `\n### ${x.title}\n\n${x.text}\n`; });
@@ -826,6 +920,10 @@ const LRANK = { natal:0, decadal:1, yearly:2, monthly:3 };
 function parseNotes() {
   return Object.entries(notes).filter(([, v]) => v && v.trim()).map(([key, text]) => {
     let rest = key, layer = null;
+    if (rest.startsWith('飛:')) {
+      const [src, hua, tgt] = rest.slice(2).split('|');
+      return { key, text, fly:{ src, hua, tgt }, pal: src, title: src === tgt ? `${palName(src)}自化${hua}` : `${palName(src)}化${hua}入${palName(tgt)}`, gStar:'宮干飛化', gPal: src, rank: 8000 + PALACES.indexOf(src) * 4 + HN.indexOf(hua) };
+    }
     if (rest.startsWith('事件:')) {
       const cat = rest.slice(3);
       return { key, text, ev:cat, title:`事件：${cat}`, gStar:'事件筆記', gPal:'事件筆記', rank:9500 };
@@ -904,7 +1002,8 @@ function renderNotes() {
   const html = groupNotes(list, byStar).map(([g, items]) => `<div class="ngroup"><h3>${byStar || g === '事件筆記' ? esc(g) : palName(g)}<small>${items.length} 則</small></h3>
       ${items.map(n => {
         const ppl = n.star && !n.layer ? whoHas(n.star, n.pal) : [];
-        const go = n.ev ? `<button class="go" data-goevcat="${esc(n.ev)}">看所有朋友的這類事件</button>`
+        const go = n.fly ? `<button class="go" data-gofly="${esc(n.fly.src)}|${esc(n.fly.hua)}">看所有朋友的${palName(n.fly.src)}化${esc(n.fly.hua)}</button>`
+          : n.ev ? `<button class="go" data-goevcat="${esc(n.ev)}">看所有朋友的這類事件</button>`
           : n.star ? `<button class="go" data-gostar="${esc(n.star)}" data-golayer="${n.layer || 'natal'}">看所有朋友的${n.layer ? LNAME[n.layer] : ''}${esc(n.star)}</button>`
           : `<button class="go" data-gopal="${esc(n.pal)}" data-golayer="${n.layer || 'natal'}">看所有朋友的${n.layer ? LNAME[n.layer] : ''}${palName(n.pal)}</button>`;
         return `<div class="ncard" id="n-${encodeURIComponent(n.key)}"><div class="nh"><b>${hl(n.title)}</b>${go}</div>
@@ -947,6 +1046,8 @@ $('#notesOut').addEventListener('click', e => {
   const co = e.target.closest('[data-cnopen]');
   if (co) { ui.person = co.dataset.cnopen; go('chart'); setTimeout(() => document.getElementById('cnotes')?.scrollIntoView({ block:'start' }), 50); }
   if (ge) { ui.evCat = ge.dataset.goevcat; ui.mode = 'event'; go('compare'); }
+  const gf = e.target.closest('[data-gofly]');
+  if (gf) { const [src, hua] = gf.dataset.gofly.split('|'); ui.flySrc = src; ui.flyHua = hua; ui.mode = 'fly'; go('compare'); }
 });
 
 /* ---------- 星曜卡 ---------- */
@@ -1289,17 +1390,26 @@ document.querySelector('.seg').addEventListener('click', e => { const b = e.targ
 $('#starSel').addEventListener('change', e => { ui.star = e.target.value; saveUI(); renderCompare(); });
 $('#palSel').addEventListener('change', e => { ui.palace = e.target.value; saveUI(); renderCompare(); });
 $('#evCatSel').addEventListener('change', e => { ui.evCat = e.target.value; saveUI(); renderCompare(); });
+$('#flySrcSel').addEventListener('change', e => { ui.flySrc = e.target.value; saveUI(); renderCompare(); });
+$('#flyHuaSel').addEventListener('change', e => { ui.flyHua = e.target.value; saveUI(); renderCompare(); });
 $('#layerSel').addEventListener('change', e => { ui.cLayer = e.target.value; saveUI(); renderCompare(); });
 $('#cYear').addEventListener('change', e => { const v = +e.target.value; if (v >= 1900 && v <= 2100) { ui.cYear = v; saveUI(); renderCompare(); } });
 $('#personSel').addEventListener('change', e => { ui.person = e.target.value; saveUI(); renderChart(); });
 $('#partnerSel').addEventListener('change', e => { ui.partner = e.target.value || null; saveUI(); renderChart(); });
 function swapPair() { if (!ui.partner) return; const t = ui.person; ui.person = ui.partner; ui.partner = t; saveUI(); renderChart(); }
 $('#swapBtn').addEventListener('click', swapPair);
+$('#toFlyBtn').addEventListener('click', () => document.getElementById('flysum')?.scrollIntoView({ behavior:'smooth', block:'start' }));
 $('#toNotesBtn').addEventListener('click', () => document.getElementById('cnotes')?.scrollIntoView({ behavior:'smooth', block:'start' }));
 $('#detailSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.detail = b.dataset.detail; saveUI(); renderChart(); });
 
 document.querySelector('main').addEventListener('click', e => {
   if (e.target.closest('[data-swap]')) { swapPair(); return; }
+  const fsel = e.target.closest('[data-fly-sel]');
+  if (fsel) {
+    ui.selBr = fsel.dataset.flySel; ui.scope = 'sel';
+    if (!(ui.lines || []).length) ui.lines = ['祿', '權', '科', '忌'];
+    saveUI(); renderChart(); document.querySelector('#chartOut .chart')?.scrollIntoView({ behavior:'smooth', block:'center' }); return;
+  }
   const cm = e.target.closest('[data-cn-mode]');
   if (cm) { ui.cnMode = cm.dataset.cnMode; saveUI(); const y = window.scrollY; renderChart(); window.scrollTo(0, y); return; }
   const cp = e.target.closest('[data-copy-to]');

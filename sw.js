@@ -1,7 +1,7 @@
 // 星曜對照簿：離線快取
 // 自己網站的檔案：先抓網路上的最新版，沒網路時才用快取（所以上傳新版後重新整理就會更新）
 // Google 字型：先用快取，加快載入
-const CACHE = 'ziwei-v4';
+const CACHE = 'ziwei-v5';
 const APP = ['./', './index.html', './style.css', './app.js', './iztro.min.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

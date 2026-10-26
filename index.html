@@ -42,10 +42,13 @@
       <div class="seg" role="group" aria-label="對照方式">
         <button data-mode="star" aria-pressed="true">以星找宮</button>
         <button data-mode="palace" aria-pressed="false">以宮看星</button>
+        <button data-mode="fly" aria-pressed="false">以飛化看</button>
         <button data-mode="event" aria-pressed="false">以事件看</button>
       </div>
       <select id="starSel" aria-label="選擇星曜"></select>
       <select id="palSel" aria-label="選擇宮位" hidden></select>
+      <select id="flySrcSel" aria-label="飛出的宮位" hidden></select>
+      <select id="flyHuaSel" aria-label="四化" hidden></select>
       <select id="evCatSel" aria-label="事件類別" hidden></select>
       <span class="layerctl" id="layerCtl">
         <select id="layerSel" aria-label="盤層">
@@ -65,6 +68,7 @@
       <select id="personSel" aria-label="選擇朋友"></select>
       <select id="partnerSel" aria-label="合盤對象"></select>
       <button class="btn" id="swapBtn" type="button" hidden title="對調兩人">⇄ 對調</button>
+      <button class="btn" id="toFlyBtn" type="button">🔀 飛化總表</button>
       <button class="btn" id="toNotesBtn" type="button">📒 命例檔案</button>
       <div class="seg" role="group" aria-label="顯示內容" id="detailSeg">
         <button data-detail="full">完整</button>

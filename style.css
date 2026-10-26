@@ -481,3 +481,51 @@ dd.xing span{white-space:normal}
 .g-hua{--gc:var(--zi)}.g-lu{--gc:var(--lu)}.g-quan{--gc:var(--quan)}.g-ke{--gc:var(--ke)}.g-ji{--gc:var(--ji)}
 .hua .si{font-size:.9em;margin-right:1px}
 .lh{cursor:help}
+
+/* 宮干飛化總表 */
+.flysum{margin-top:22px;background:var(--sheet);border:1px solid var(--line);border-left:4px solid var(--ji);border-radius:10px;padding:14px}
+.flysum h4{margin:16px 0 8px;font-family:var(--serif);font-size:17px}
+.flysum h4 small{font-family:var(--sans);font-size:12px;font-weight:400}
+table.flyt{min-width:560px;border-collapse:separate;border-spacing:3px}
+.flyt th,.flyt td{border:0;padding:0;vertical-align:stretch}
+.flyt thead th{text-align:center;font-size:13px;padding:4px}
+.flyt .fh.祿{color:var(--lu)}.flyt .fh.權{color:var(--quan)}.flyt .fh.科{color:var(--ke)}.flyt .fh.忌{color:var(--ji)}
+.flyt tbody th{text-align:left;padding:4px 6px;white-space:nowrap}
+.flyt tbody th small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.flyt tr.on th .fly-pal{color:var(--sheet);background:var(--zi)}
+.fly-pal{border:1px solid var(--zi);background:none;color:var(--zi);border-radius:6px;padding:2px 8px;font-family:var(--serif);font-weight:600;font-size:15px;cursor:pointer}
+.fcell{position:relative;width:100%;height:100%;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer;padding:4px 2px;line-height:1.3;color:var(--ink)}
+.fcell:hover{border-color:var(--zi)}
+.fc .fs{font-size:11px;color:var(--muted)}
+.fc b{font-size:14px}
+.fc.祿 b{color:var(--lu)}.fc.權 b{color:var(--quan)}.fc.科 b{color:var(--ke)}.fc.忌 b{color:var(--ji)}
+.fc small{font-size:11px;color:var(--ji)}
+.fc.self .fcell{background:color-mix(in srgb,var(--zi) 12%,var(--sheet));border-style:dashed}
+.ndot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--zi)}
+.incgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.incbox{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--paper);font-size:13px}
+.incbox b{font-family:var(--serif);margin-right:4px}
+.incbox em{font-style:normal;font-size:11px;border-radius:3px;padding:0 4px;margin-left:2px;color:#fff}
+.tag-ji{background:var(--ji)}.tag-lu{background:var(--lu)}
+.incs{display:flex;gap:4px;margin-top:4px}
+.inc{font-size:12px;font-weight:700;border-radius:4px;padding:0 5px;color:#fff}
+.inc.祿{background:var(--lu)}.inc.權{background:var(--quan)}.inc.科{background:var(--ke)}.inc.忌{background:var(--ji)}
+.inc.zero{background:transparent;color:var(--muted);font-weight:400;border:1px solid var(--line)}
+.flynotes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.flynotes ul{margin:0;padding-left:18px;line-height:1.9;font-size:14px}
+@media (max-width:700px){.flynotes{grid-template-columns:1fr}table.flyt{min-width:0}.fcell{min-height:46px}.fc b{font-size:12px}.fly-pal{font-size:13px;padding:2px 5px}.incgrid{grid-template-columns:repeat(2,1fr)}}
+.flyt tbody th,.flyt thead th:first-child{width:6.5em}
+@media (max-width:700px){
+  table.flyt{table-layout:fixed;width:100%;border-spacing:2px}
+  .flyt thead{display:table-header-group}
+  .flyt tr{display:table-row;padding:0;border:0}
+  .flyt th,.flyt td{display:table-cell;padding:0;position:static}
+  .flyt td::before{content:none}
+  .flyt tbody th,.flyt thead th:first-child{width:4.4em}
+  .flyt tbody th{padding:2px}
+  .flyt thead th{font-size:11px;padding:2px 0}
+  .fcell{padding:3px 1px;min-height:44px}
+  .fc .fs,.fc small{font-size:9px}
+  .fc b{font-size:11px}
+  .ndot{top:2px;right:2px;width:5px;height:5px}
+}
