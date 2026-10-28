@@ -35,6 +35,10 @@
   <span class="msg"></span>
   <span class="acts"><button class="btn primary" id="backupNow">立即備份</button><button class="btn" id="backupLater">明天再提醒</button></span>
 </div>
+<div class="banner danger" id="storageBanner" hidden role="alert">
+  <span class="msg">瀏覽器的儲存空間已滿，最新的修改沒有存進這台裝置。請馬上「匯出備份」保住內容，再移除部分星卡圖片騰出空間。</span>
+  <span class="acts"><button class="btn primary" onclick="document.getElementById('exportBtn').click()">立即備份</button></span>
+</div>
 <main>
   <!-- 對照 -->
   <section class="view on" id="v-compare">
@@ -122,6 +126,7 @@
           <label class="btn">匯入備份<input type="file" id="importFile" accept="application/json" hidden></label>
           <button class="btn" id="sampleBtn">加入兩個範例</button>
         </div>
+        <p class="storage-info" id="storageInfo"></p>
         <div class="card settings">
           <h3>排盤設定</h3>
           <div id="settingsForm" class="settings-grid"></div>
@@ -177,6 +182,16 @@
   <div class="dlg-head"><b id="noteDlgTitle">筆記</b><button class="btn primary" id="noteDlgClose" type="button">完成</button></div>
   <textarea id="noteDlgText" placeholder="寫下你觀察到的共通點、書上的解釋…" aria-label="筆記內容"></textarea>
   <div class="dlg-foot">輸入的內容會自動儲存。</div>
+</dialog>
+<dialog id="importDlg" class="impdlg" aria-labelledby="importTitle">
+  <div class="dlg-head"><b id="importTitle">匯入備份</b></div>
+  <div class="imp-body" id="importInfo"></div>
+  <div class="imp-acts">
+    <button class="btn primary" data-imp="overwrite" type="button">以備份檔為準</button>
+    <button class="btn" data-imp="addonly" type="button">只加入這台沒有的</button>
+    <button class="btn" data-imp="backupFirst" type="button">先匯出這台的資料</button>
+    <button class="btn" data-imp="cancel" type="button">取消</button>
+  </div>
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 

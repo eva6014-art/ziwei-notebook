@@ -30,8 +30,13 @@ const save = (k, v) => {
   try {
     localStorage.setItem(k, JSON.stringify(v));
     if (DATA_KEYS.includes(k)) { meta.lastChange = Date.now(); localStorage.setItem(KEY_M, JSON.stringify(meta)); if (bannerReady) renderBackupBanner(); }
-  } catch { toast('無法儲存到瀏覽器，請記得匯出備份'); }
+  } catch { storageFull = true; showStorageWarn(); }
 };
+let storageFull = false;
+function showStorageWarn() {
+  const el = document.getElementById('storageBanner'); if (!el) return;
+  el.hidden = false;
+}
 let meta = load(KEY_M, {});
 let bannerReady = false;
 let people = load(KEY_P, []);
@@ -1205,10 +1210,10 @@ async function fileToThumb(file) {
   try {
     const img = new Image();
     await new Promise((ok, bad) => { img.onload = ok; img.onerror = bad; img.src = url; });
-    const sc = Math.min(1, 360 / Math.max(img.width, img.height));
+    const sc = Math.min(1, 280 / Math.max(img.width, img.height));
     const cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
     cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-    return cv.toDataURL('image/jpeg', 0.82);
+    return cv.toDataURL('image/jpeg', 0.75);
   } finally { URL.revokeObjectURL(url); }
 }
 document.getElementById('v-cards').addEventListener('change', async e => {
@@ -1224,6 +1229,7 @@ document.querySelector('main').addEventListener('click', e => { const oc = e.tar
 
 /* ---------- 朋友 ---------- */
 function renderPeople() {
+  setTimeout(updateStorageInfo, 0);
   $('#plist').innerHTML = people.length ? people.map(p => {
     const a = chartOf(p);
     const ming = a && a.palaces.find(x => x.name === '命宮');
@@ -1340,29 +1346,81 @@ async function doBackup() {
   if (ok) { meta.lastBackup = Date.now(); save(KEY_M, meta); renderBackupBanner(); toast('已匯出備份'); }
 }
 $('#exportBtn').addEventListener('click', doBackup);
+/* 匯入：先比對差異，再讓使用者選擇「以備份檔為準」或「只加入新的」 */
+let pendingImport = null;
+const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+function diffObj(local, incoming) {
+  let add = 0, chg = 0;
+  Object.entries(incoming || {}).forEach(([k, v]) => { if (!(k in local)) add++; else if (!same(local[k], v)) chg++; });
+  return { add, chg };
+}
+function importSummary(d) {
+  const r = {};
+  const ids = new Map(people.map(p => [p.id, p]));
+  r.people = { add: d.people.filter(p => !ids.has(p.id)).length, chg: d.people.filter(p => ids.has(p.id) && !same(ids.get(p.id), p)).length };
+  r.notes = diffObj(notes, d.notes);
+  r.pnotes = { add: 0, chg: 0 };
+  Object.entries(d.pnotes || {}).forEach(([pid, obj]) => { const x = diffObj(pnotes[pid] || {}, obj); r.pnotes.add += x.add; r.pnotes.chg += x.chg; });
+  r.events = { add: 0, chg: 0 };
+  Object.entries(d.events || {}).forEach(([pid, list]) => { const m = new Map((events[pid] || []).map(x => [x.id, x])); (list || []).forEach(x => { if (!m.has(x.id)) r.events.add++; else if (!same(m.get(x.id), x)) r.events.chg++; }); });
+  r.anns = diffObj(anns, d.anns);
+  r.cards = diffObj(cards, d.cards);
+  return r;
+}
+function applyImport(d, overwrite) {
+  const pick = (local, inc) => overwrite ? Object.assign({}, local, inc || {}) : Object.assign({}, inc || {}, local);
+  const byId = new Map(people.map(p => [p.id, p]));
+  d.people.forEach(p => { if (!byId.has(p.id)) people.push(p); else if (overwrite) Object.assign(byId.get(p.id), p); });
+  notes = pick(notes, d.notes);
+  Object.entries(d.pnotes || {}).forEach(([pid, obj]) => { pnotes[pid] = pick(pnotes[pid] || {}, obj); });
+  Object.entries(d.events || {}).forEach(([pid, list]) => {
+    const cur = events[pid] || [], m = new Map(cur.map(x => [x.id, x]));
+    (list || []).forEach(x => { if (!m.has(x.id)) cur.push(x); else if (overwrite) Object.assign(m.get(x.id), x); });
+    events[pid] = cur;
+  });
+  anns = pick(anns, d.anns);
+  Object.entries(d.cards || {}).forEach(([n, obj]) => { cards[n] = overwrite ? Object.assign({}, cards[n], obj) : Object.assign({}, obj, cards[n]); });
+  if (overwrite && d.settings) { settings = Object.assign({}, DEFAULT_SETTINGS, d.settings); save(KEY_S, settings); applySettings(); renderSettings(); }
+  cache.clear();
+  save(KEY_P, people); save(KEY_N, notes); save(KEY_E, events); save(KEY_PN, pnotes); save(KEY_A, anns); save(KEY_C, cards);
+  refresh(); updateStorageInfo();
+}
 $('#importFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; if (!f) return;
-  try {
-    const data = JSON.parse(await f.text());
-    if (!Array.isArray(data.people)) throw 0;
-    const ids = new Set(people.map(p => p.id));
-    const add = data.people.filter(p => !ids.has(p.id));
-    people = people.concat(add);
-    notes = Object.assign({}, data.notes || {}, notes);
-    let ev = 0;
-    Object.entries(data.events || {}).forEach(([pid, list]) => {
-      const have = new Set((events[pid] || []).map(x => x.id));
-      const nw = (list || []).filter(x => !have.has(x.id)); ev += nw.length;
-      events[pid] = (events[pid] || []).concat(nw);
-    });
-    Object.entries(data.pnotes || {}).forEach(([pid, obj]) => { pnotes[pid] = Object.assign({}, obj, pnotes[pid] || {}); });
-    Object.entries(data.cards || {}).forEach(([n, obj]) => { cards[n] = Object.assign({}, obj, cards[n] || {}); }); save(KEY_C, cards);
-    anns = Object.assign({}, data.anns || {}, anns); save(KEY_A, anns);
-    save(KEY_P, people); save(KEY_N, notes); save(KEY_E, events); save(KEY_PN, pnotes); refresh();
-    toast(`匯入 ${add.length} 位朋友${ev ? `、${ev} 筆事件` : ''}`);
-  } catch { toast('這個檔案不是本網頁匯出的備份'); }
-  e.target.value = '';
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let d;
+  try { d = JSON.parse(await f.text()); if (!Array.isArray(d.people)) throw 0; }
+  catch { toast('這個檔案不是本網頁匯出的備份'); return; }
+  pendingImport = d;
+  const r = importSummary(d);
+  const L = { people:'朋友', notes:'通用筆記', pnotes:'實際狀況', events:'事件', anns:'註解', cards:'星卡設定' };
+  const line = k => Object.keys(L).filter(x => r[x][k]).map(x => `${L[x]} ${r[x][k]}`).join('、') || '沒有';
+  const totalChg = Object.keys(L).reduce((n, x) => n + r[x].chg, 0);
+  $('#importInfo').innerHTML = `<p>備份檔：${esc(f.name)}${d.exportedAt ? `（${new Date(d.exportedAt).toLocaleString('zh-TW')} 匯出）` : ''}</p>
+    <dl class="imp"><dt>這台沒有、會新增</dt><dd>${line('add')}</dd><dt>兩邊內容不同</dt><dd>${line('chg')}</dd></dl>
+    ${totalChg ? `<p class="hint">「兩邊內容不同」通常是你在另一台裝置修改過。選「以備份檔為準」才會帶入修改後的內容；這台裝置上比備份檔更新的修改會被蓋掉。</p>` : '<p class="hint">沒有內容衝突，兩種方式結果相同。</p>'}`;
+  const dlgI = $('#importDlg'); if (dlgI.showModal) dlgI.showModal(); else dlgI.setAttribute('open', '');
 });
+$('#importDlg').addEventListener('click', e => {
+  const b = e.target.closest('[data-imp]'); if (!b) return;
+  const mode = b.dataset.imp, dlgI = $('#importDlg');
+  if (mode === 'backupFirst') { doBackup(); return; }
+  dlgI.close();
+  if (mode === 'cancel' || !pendingImport) { pendingImport = null; return; }
+  applyImport(pendingImport, mode === 'overwrite'); pendingImport = null;
+  toast(mode === 'overwrite' ? '已匯入，相同項目以備份檔為準' : '已匯入新的項目');
+});
+
+/* 瀏覽器儲存空間 */
+function updateStorageInfo() {
+  const el = document.getElementById('storageInfo'); if (!el) return;
+  let chars = 0, img = 0;
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('ziwei.')) chars += k.length + (localStorage.getItem(k) || '').length; } } catch { }
+  Object.values(cards).forEach(c => { if (c && c.img) img += c.img.length; });
+  const mb = chars * 2 / 1048576, pct = Math.min(100, Math.round(mb / 5 * 100));
+  const sz = n => n < 0.1 ? `${Math.max(1, Math.round(n * 1024))} KB` : `${n.toFixed(2)} MB`;
+  el.innerHTML = `瀏覽器儲存空間：已用約 ${sz(mb)}（上限約 5 MB，${pct}%）${img ? `，其中星卡圖片約 ${sz(img * 2 / 1048576)}` : ''}`;
+  el.classList.toggle('warn', pct >= 80 || storageFull);
+}
 $('#sampleBtn').addEventListener('click', () => {
   people.push(
     { id:'demoA', name:'範例・小安', gender:'女', calendar:'solar', y:1992, m:3, d:14, leap:false, time:6, note:'範例資料，可刪除' },

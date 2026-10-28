@@ -56,7 +56,7 @@ select,input[type=text],input[type=number],textarea{background:var(--sheet);bord
 .focus p{margin:0 0 6px;color:var(--muted);max-width:40em}
 
 .rows{border-top:2px solid var(--ink)}
-.row{display:grid;grid-template-columns:5.5em 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
 .row.empty .pname{color:var(--muted);font-weight:400}
 .pname{font-family:var(--serif);font-weight:600;font-size:18px}
 .pname span{display:block;font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400}
@@ -529,3 +529,20 @@ table.flyt{min-width:560px;border-collapse:separate;border-spacing:3px}
   .fc b{font-size:11px}
   .ndot{top:2px;right:2px;width:5px;height:5px}
 }
+
+/* 手機版：避免長內容把頁面撐寬 */
+main{overflow-x:clip}
+.hits,.hit,.pn-snip,.note,.cn-item,.cn-x,.pn-box{min-width:0;max-width:100%}
+.pn-snip,.cn-x,.note summary,.ev-t,.sann{overflow-wrap:anywhere;word-break:break-word}
+.hit > *{min-width:0}
+/* 匯入對話框與儲存空間 */
+dialog.impdlg{border:0;padding:0;border-radius:12px;width:min(520px,94vw);background:var(--sheet);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog.impdlg::backdrop{background:rgba(20,16,30,.55)}
+.imp-body{padding:12px 16px;font-size:14px}
+.imp-body p{margin:0 0 8px}
+dl.imp{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0}
+dl.imp dt{color:var(--muted)}dl.imp dd{margin:0}
+.imp-acts{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.storage-info{font-size:12px;color:var(--muted);margin:10px 0 0}
+.storage-info.warn{color:var(--bad);font-weight:700}
+.banner.danger{background:color-mix(in srgb,var(--bad) 14%,var(--sheet));border-color:var(--bad)}
